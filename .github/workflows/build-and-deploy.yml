@@ -44,6 +44,9 @@ jobs:
       - name: Regenerate OG image
         run: uv run python scripts/make_og_image.py
 
+      - name: Regenerate app icons
+        run: uv run python scripts/make_icons.py
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
