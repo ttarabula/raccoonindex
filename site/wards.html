@@ -186,10 +186,12 @@
   </p>
   <p>
     The current-week projection on the home page blends a 4-week trailing mean
-    with a weather adjustment fit on Toronto City station daily temperatures
-    (β ≈ 0.03 log-ratio per °C, R² ≈ 0.16). Warmer-than-seasonal weeks nudge
-    the projection up; cold snaps nudge it down. Weather is not a forecast;
-    we use observed temps through the current week.
+    with a weather adjustment fit on Toronto City daily temperature and
+    precipitation (n ≈ 200 baseline-year weeks, β_temp ≈ 0.027 log-ratio per °C,
+    β_precip ≈ 0.001 per mm, R² ≈ 0.17). Temperature is the dominant signal;
+    precipitation adds almost nothing after controlling for it, because in
+    Toronto warm weeks tend to be wet weeks. Weather is observed, not
+    forecast — we only use temps through the current week.
   </p>
   <p>
     None of these records are literally raccoon records. The index is a composite

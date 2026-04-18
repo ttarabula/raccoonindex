@@ -503,20 +503,29 @@ def main() -> None:
     # Apply the resulting β to the current week's temp deviation to shift the
     # projection up or down. A hot week for March will nudge the projection
     # higher; a cold snap will nudge it lower.
-    weather_beta = 0.0
+    weather_beta_temp = 0.0
+    weather_beta_precip = 0.0
     weather_n = 0
     weather_r2 = None
     weather_current_temp = None
+    weather_current_precip = None
     weather_historical_temp = None
+    weather_historical_precip = None
     weather_factor = 1.0
     hist_temp_by_iso_week: dict[int, float] = {}
+    hist_precip_by_iso_week: dict[int, float] = {}
 
     if WEATHER_DAILY.exists():
+        import numpy as np
+
         con.execute(
             f"""
             CREATE OR REPLACE VIEW weather_daily AS
-            SELECT CAST(date AS DATE) AS d, CAST(mean_temp_c AS DOUBLE) AS temp
-            FROM read_csv('{WEATHER_DAILY}', header=true, auto_detect=true)
+            SELECT CAST(date AS DATE) AS d,
+                   TRY_CAST(mean_temp_c AS DOUBLE) AS temp,
+                   TRY_CAST(precip_mm AS DOUBLE) AS precip
+            FROM read_csv('{WEATHER_DAILY}', header=true, auto_detect=true,
+                          nullstr='')
             """
         )
         con.execute(
@@ -524,67 +533,74 @@ def main() -> None:
             CREATE OR REPLACE VIEW weekly_weather AS
             SELECT CAST(ISOYEAR(d) AS INT) AS iso_year,
                    CAST(WEEK(d) AS INT) AS iso_week,
-                   AVG(temp) AS weekly_temp
+                   AVG(temp) AS weekly_temp,
+                   AVG(precip) AS weekly_precip
             FROM weather_daily
             GROUP BY iso_year, iso_week
             """
         )
-        hist_temp_by_iso_week = {
-            int(r[0]): float(r[1]) for r in con.execute(
-                f"""
-                SELECT iso_week, AVG(weekly_temp)
-                FROM weekly_weather
-                WHERE iso_year IN {BASELINE_YEARS_SQL}
-                GROUP BY iso_week
-                """
-            ).fetchall()
-        }
+        hist_rows = con.execute(
+            f"""
+            SELECT iso_week, AVG(weekly_temp), AVG(weekly_precip)
+            FROM weekly_weather
+            WHERE iso_year IN {BASELINE_YEARS_SQL}
+            GROUP BY iso_week
+            """
+        ).fetchall()
+        for iso_w, t, p in hist_rows:
+            if t is not None:
+                hist_temp_by_iso_week[int(iso_w)] = float(t)
+            if p is not None:
+                hist_precip_by_iso_week[int(iso_w)] = float(p)
+
         reg_rows = con.execute(
             f"""
-            SELECT c.city_ratio, w.weekly_temp, c.iso_week
+            SELECT c.city_ratio, w.weekly_temp, w.weekly_precip, c.iso_week
             FROM weekly_city c
             JOIN weekly_weather w USING (iso_year, iso_week)
             WHERE c.iso_year IN {BASELINE_YEARS_SQL}
               AND c.city_ratio IS NOT NULL AND c.city_ratio > 0
               AND w.weekly_temp IS NOT NULL
+              AND w.weekly_precip IS NOT NULL
             """
         ).fetchall()
-        xs, ys = [], []
-        for ratio_v, temp_v, iso_w in reg_rows:
-            hist = hist_temp_by_iso_week.get(int(iso_w))
-            if hist is None:
+        X_rows, ys = [], []
+        for ratio_v, temp_v, precip_v, iso_w in reg_rows:
+            ht = hist_temp_by_iso_week.get(int(iso_w))
+            hp = hist_precip_by_iso_week.get(int(iso_w))
+            if ht is None or hp is None:
                 continue
-            xs.append(float(temp_v) - hist)
+            X_rows.append([1.0, float(temp_v) - ht, float(precip_v) - hp])
             ys.append(math.log(float(ratio_v)))
-        if len(xs) >= 10:
-            mean_x = sum(xs) / len(xs)
-            mean_y = sum(ys) / len(ys)
-            cov_xy = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys))
-            var_x = sum((x - mean_x) ** 2 for x in xs)
-            if var_x > 0:
-                weather_beta = cov_xy / var_x
-                weather_n = len(xs)
-                resid_ss = sum(
-                    (y - (mean_y + weather_beta * (x - mean_x))) ** 2
-                    for x, y in zip(xs, ys)
-                )
-                total_ss = sum((y - mean_y) ** 2 for y in ys)
-                weather_r2 = 1.0 - resid_ss / total_ss if total_ss > 0 else None
+        if len(X_rows) >= 10:
+            X = np.array(X_rows)
+            y = np.array(ys)
+            coefs, *_ = np.linalg.lstsq(X, y, rcond=None)
+            alpha_hat, weather_beta_temp, weather_beta_precip = (float(c) for c in coefs)
+            weather_n = len(X_rows)
+            y_hat = X @ coefs
+            total_ss = float(((y - y.mean()) ** 2).sum())
+            resid_ss = float(((y - y_hat) ** 2).sum())
+            weather_r2 = 1.0 - resid_ss / total_ss if total_ss > 0 else None
 
         cur_row = con.execute(
             """
-            SELECT AVG(temp) FROM weather_daily
+            SELECT AVG(temp), AVG(precip) FROM weather_daily
             WHERE CAST(ISOYEAR(d) AS INT) = ? AND CAST(WEEK(d) AS INT) = ?
             """,
             [proj_year, proj_week],
         ).fetchone()
         weather_current_temp = float(cur_row[0]) if cur_row[0] is not None else None
+        weather_current_precip = float(cur_row[1]) if cur_row[1] is not None else None
         weather_historical_temp = hist_temp_by_iso_week.get(proj_week)
-        if (weather_current_temp is not None and
-                weather_historical_temp is not None and weather_beta != 0.0):
-            weather_factor = math.exp(
-                weather_beta * (weather_current_temp - weather_historical_temp)
-            )
+        weather_historical_precip = hist_precip_by_iso_week.get(proj_week)
+
+        exponent = 0.0
+        if weather_current_temp is not None and weather_historical_temp is not None:
+            exponent += weather_beta_temp * (weather_current_temp - weather_historical_temp)
+        if weather_current_precip is not None and weather_historical_precip is not None:
+            exponent += weather_beta_precip * (weather_current_precip - weather_historical_precip)
+        weather_factor = math.exp(exponent) if exponent != 0.0 else 1.0
     # Projection CI from the variability of trailing weekly ratios. Uses sample
     # std / sqrt(n); falls back to None when we have fewer than 2 observations.
     if trailing_mean is not None and len(trailing_values) >= 2:
@@ -629,7 +645,10 @@ def main() -> None:
             "weather": {
                 "current_week_temp_c": weather_current_temp,
                 "historical_week_temp_c": weather_historical_temp,
-                "beta": weather_beta,
+                "current_week_precip_mm": weather_current_precip,
+                "historical_week_precip_mm": weather_historical_precip,
+                "beta_temp": weather_beta_temp,
+                "beta_precip": weather_beta_precip,
                 "n_fit": weather_n,
                 "r_squared": weather_r2,
                 "adjustment_factor": weather_factor,

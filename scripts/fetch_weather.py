@@ -62,24 +62,37 @@ def main() -> None:
     # endpoint returns the full year regardless of Month param, so dedupe
     # by date and prefer the most recent file (newer fetches for the current
     # month pick up intra-month updates).
-    seen: dict[str, float] = {}
+    # (date -> (mean_temp_c, precip_mm)). precip can be missing independently
+    # of temp; we keep whichever are available per day.
+    seen: dict[str, tuple[float | None, float | None]] = {}
     for fp in sorted(RAW.glob("*.csv")):
         with fp.open(encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 date = row.get("Date/Time") or row.get("\ufeffDate/Time")
                 mean = row.get("Mean Temp (\u00b0C)")
-                if not date or not mean:
+                precip = row.get("Total Precip (mm)")
+                if not date:
                     continue
+                t = None
+                p = None
                 try:
-                    seen[date] = float(mean)
+                    if mean:
+                        t = float(mean)
                 except ValueError:
-                    continue
+                    pass
+                try:
+                    if precip:
+                        p = float(precip)
+                except ValueError:
+                    pass
+                seen[date] = (t, p)
     with MERGED.open("w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["date", "mean_temp_c"])
+        w.writerow(["date", "mean_temp_c", "precip_mm"])
         for date in sorted(seen):
-            w.writerow([date, seen[date]])
+            t, p = seen[date]
+            w.writerow([date, "" if t is None else t, "" if p is None else p])
     print(f"wrote {MERGED} ({len(seen)} unique daily rows)")
 
 
