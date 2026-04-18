@@ -1,0 +1,16 @@
+; BIND zone file for raccoonindex.ca — import via Cloudflare's DNS import feature.
+; Points the apex at GitHub Pages and adds a www CNAME.
+; After importing, set all five records to "DNS only" (gray cloud) — GitHub Pages
+; handles its own TLS and Cloudflare proxying will break it.
+
+$ORIGIN raccoonindex.ca.
+$TTL 3600
+
+; GitHub Pages apex A records (https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site#configuring-an-apex-domain)
+@    IN  A      185.199.108.153
+@    IN  A      185.199.109.153
+@    IN  A      185.199.110.153
+@    IN  A      185.199.111.153
+
+; www subdomain → your GitHub Pages hostname
+www  IN  CNAME  ttarabula.github.io.
