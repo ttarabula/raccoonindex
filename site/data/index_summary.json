@@ -331,5 +331,16 @@
       "raw_score": 680.75,
       "ratio": 0.39985315712187947
     }
-  ]
+  ],
+  "projection": {
+    "iso_year": 2026,
+    "iso_week": 16,
+    "baseline": 1792.1666666666667,
+    "trailing_weeks": 4,
+    "trailing_ratio_mean": 1.1013492757644614,
+    "projected_raw_score": 1973.8014603825422,
+    "projected_seasonal_ratio": 1.1013492757644614,
+    "projected_tier_level": 4,
+    "projected_tier_name": "BIN BREACH"
+  }
 }

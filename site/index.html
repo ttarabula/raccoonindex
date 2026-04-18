@@ -103,6 +103,18 @@
     color: var(--dim); font-size: 0.78rem; font-style: italic;
   }
 
+  .projection {
+    max-width: 540px; margin: 2rem auto 0;
+    padding: 0.9rem 1.2rem;
+    border: 1px dashed var(--rule); border-radius: 6px;
+    text-align: center;
+  }
+  .projection .proj-k { color: var(--dim); font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.1em; }
+  .projection .proj-n { font-size: 1.25rem; margin: 0.35rem 0 0.15rem;
+    font-weight: 600; font-family: "ui-sans-serif", system-ui, sans-serif; }
+  .projection .proj-sub { color: var(--dim); font-size: 0.8rem; line-height: 1.45; }
+
   .callouts {
     max-width: 900px; margin: 0 auto;
     display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
@@ -249,6 +261,12 @@
     <div class="status-line" id="status-line">Loading weekly readings…</div>
     <div class="period-stamp" id="period-stamp">—</div>
     <div class="lag-note">Toronto 311 publishes on a 2–3 week delay; this is the latest complete week.</div>
+
+    <div class="projection" id="projection" style="display:none">
+      <div class="proj-k">Estimated for this week</div>
+      <div class="proj-n"><span id="proj-tier-name">—</span> · <span id="proj-ratio">—</span></div>
+      <div class="proj-sub" id="proj-sub">—</div>
+    </div>
   </section>
 
   <section class="callouts">
@@ -358,6 +376,29 @@
     return mon.toLocaleDateString("en-CA", {
       month: "short", day: "numeric", year: "numeric", timeZone: "UTC",
     });
+  }
+
+  // Projection for the current ISO week, if we have it and it's newer than the
+  // latest confirmed week.
+  if (summary.projection) {
+    const p = summary.projection;
+    const isNewer = p.iso_year > summary.iso_year ||
+                    (p.iso_year === summary.iso_year && p.iso_week > summary.iso_week);
+    if (isNewer && p.projected_tier_name) {
+      const pColor = TIER_COLORS[p.projected_tier_level] || "var(--accent)";
+      const pRatio = p.projected_seasonal_ratio != null
+                     ? Number(p.projected_seasonal_ratio).toFixed(2) + "×"
+                     : "—";
+      const nameEl = document.getElementById("proj-tier-name");
+      const ratioEl = document.getElementById("proj-ratio");
+      nameEl.textContent = p.projected_tier_name;
+      nameEl.style.color = pColor;
+      ratioEl.textContent = pRatio;
+      ratioEl.style.color = pColor;
+      document.getElementById("proj-sub").textContent =
+        `Estimate for week of ${formatIsoWeekStart(p.iso_year, p.iso_week)}, from the trailing ${p.trailing_weeks}-week trend. Actual data won't publish for ~2–3 weeks.`;
+      document.getElementById("projection").style.display = "block";
+    }
   }
 
   // Trash Panda callout

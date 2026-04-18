@@ -12,6 +12,7 @@ Weighted sum per ward-week, per-capita normalized, seasonal-baseline adjusted.
 """
 from __future__ import annotations
 
+import datetime
 import json
 import re
 import zipfile
@@ -402,6 +403,55 @@ def main() -> None:
         if w["seasonal_ratio"] is not None and float(w["seasonal_ratio"]) >= 1.0
     )
 
+    # Projection for the current real-world ISO week.
+    # Toronto 311 data lags ~3 weeks, so the latest confirmed week is usually well
+    # behind today. Project the current week as (baseline for this ISO week) *
+    # (mean seasonal ratio from trailing N weeks). Plain smoothing, not a forecast.
+    today = datetime.date.today()
+    proj_year, proj_week, _ = today.isocalendar()
+    TRAIL_N = 4
+    trailing = con.execute(
+        """
+        SELECT city_ratio FROM weekly_city
+        WHERE city_ratio IS NOT NULL
+          AND (iso_year < ? OR (iso_year = ? AND iso_week <= ?))
+        ORDER BY iso_year DESC, iso_week DESC
+        LIMIT ?
+        """,
+        [latest_y, latest_y, latest_w, TRAIL_N],
+    ).fetchall()
+    trailing_mean = (sum(float(r[0]) for r in trailing) / len(trailing)) if trailing else None
+
+    proj_baseline_row = con.execute(
+        """
+        SELECT AVG(city_raw) FROM weekly_city
+        WHERE iso_year BETWEEN 2019 AND 2024 AND iso_week = ?
+        """,
+        [proj_week],
+    ).fetchone()
+    proj_baseline = float(proj_baseline_row[0]) if proj_baseline_row[0] is not None else None
+
+    projection = None
+    if trailing_mean is not None and proj_baseline is not None:
+        proj_raw = proj_baseline * trailing_mean
+        proj_ratio = trailing_mean  # by construction
+        proj_tier_level, proj_tier_name = 3, "MASK ON"
+        for upper, lvl, name in TIERS:
+            if proj_ratio < upper:
+                proj_tier_level, proj_tier_name = lvl, name
+                break
+        projection = {
+            "iso_year": proj_year,
+            "iso_week": proj_week,
+            "baseline": proj_baseline,
+            "trailing_weeks": len(trailing),
+            "trailing_ratio_mean": trailing_mean,
+            "projected_raw_score": proj_raw,
+            "projected_seasonal_ratio": proj_ratio,
+            "projected_tier_level": proj_tier_level,
+            "projected_tier_name": proj_tier_name,
+        }
+
     summary = {
         "iso_year": latest_y,
         "iso_week": latest_w,
@@ -414,6 +464,7 @@ def main() -> None:
         "trash_panda": trash_panda,
         "biggest_mover": biggest_mover,
         "city_series_52w": city_series,
+        "projection": projection,
     }
     (PROC / "index_summary.json").write_text(
         json.dumps(summary, indent=2, default=_json_default)
