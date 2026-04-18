@@ -103,17 +103,18 @@
     color: var(--dim); font-size: 0.78rem; font-style: italic;
   }
 
-  .projection {
-    max-width: 540px; margin: 2rem auto 0;
+  .confirmed {
+    max-width: 560px; margin: 2rem auto 0;
     padding: 0.9rem 1.2rem;
-    border: 1px dashed var(--rule); border-radius: 6px;
+    border: 1px solid var(--rule); border-radius: 6px;
     text-align: center;
   }
-  .projection .proj-k { color: var(--dim); font-size: 0.72rem;
+  .confirmed .conf-k { color: var(--dim); font-size: 0.72rem;
     text-transform: uppercase; letter-spacing: 0.1em; }
-  .projection .proj-n { font-size: 1.25rem; margin: 0.35rem 0 0.15rem;
-    font-weight: 600; font-family: "ui-sans-serif", system-ui, sans-serif; }
-  .projection .proj-sub { color: var(--dim); font-size: 0.8rem; line-height: 1.45; }
+  .confirmed .conf-row { margin: 0.45rem 0 0.2rem; font-size: 1rem;
+    font-family: "ui-sans-serif", system-ui, sans-serif; }
+  .confirmed .conf-row .tier { font-weight: 700; }
+  .confirmed .conf-sub { color: var(--dim); font-size: 0.8rem; }
 
   .callouts {
     max-width: 900px; margin: 0 auto;
@@ -260,12 +261,14 @@
     <div class="ratio-line">Activity is <span class="big" id="ratio">—</span> the seasonal baseline.</div>
     <div class="status-line" id="status-line">Loading weekly readings…</div>
     <div class="period-stamp" id="period-stamp">—</div>
-    <div class="lag-note">Toronto 311 publishes on a 2–3 week delay; this is the latest complete week.</div>
+    <div class="lag-note" id="lag-note">Toronto 311 publishes on a 2–3 week delay; this is the latest complete week.</div>
 
-    <div class="projection" id="projection" style="display:none">
-      <div class="proj-k">Estimated for this week</div>
-      <div class="proj-n"><span id="proj-tier-name">—</span> · <span id="proj-ratio">—</span></div>
-      <div class="proj-sub" id="proj-sub">—</div>
+    <div class="confirmed" id="confirmed-block" style="display:none">
+      <div class="conf-k">Last confirmed · <span id="conf-period">—</span></div>
+      <div class="conf-row">
+        <span class="tier" id="conf-tier">—</span> · <span id="conf-ratio">—</span>
+      </div>
+      <div class="conf-sub" id="conf-sub">—</div>
     </div>
   </section>
 
@@ -340,31 +343,6 @@
     return f ? f.properties.name : code;
   };
 
-  // Hero
-  document.getElementById("level-num").textContent = summary.tier_level;
-  const tierEl = document.getElementById("tier-name");
-  tierEl.textContent = summary.tier_name;
-  const tierColor = TIER_COLORS[summary.tier_level] || "var(--accent)";
-  tierEl.style.color = tierColor;
-  // Tint the mascot's bandit mask with the current tier color.
-  // Use inline style so CSS var(--tN) resolves reliably on all browsers.
-  document.getElementById("mask").style.fill = tierColor;
-
-  const ratio = summary.city_seasonal_ratio;
-  const ratioEl = document.getElementById("ratio");
-  ratioEl.textContent = ratio !== null ? ratio.toFixed(2) + "×" : "—";
-  ratioEl.style.color = TIER_COLORS[summary.tier_level];
-
-  const elevated = summary.wards_elevated, total = summary.wards_total;
-  const verb = elevated >= total * 0.7 ? "across"
-             : elevated >= total * 0.4 ? "in"
-             : "in just";
-  document.getElementById("status-line").textContent =
-    `Activity is elevated ${verb} ${elevated} of ${total} wards this week.`;
-
-  document.getElementById("period-stamp").textContent =
-    `Week of ${formatIsoWeekStart(summary.iso_year, summary.iso_week)}`;
-
   function formatIsoWeekStart(isoYear, isoWeek) {
     // ISO 8601: week 1 contains Jan 4. Monday of that week is the anchor.
     const jan4 = new Date(Date.UTC(isoYear, 0, 4));
@@ -378,27 +356,77 @@
     });
   }
 
-  // Projection for the current ISO week, if we have it and it's newer than the
-  // latest confirmed week.
-  if (summary.projection) {
+  // Decide what to feature in the hero: a projection for the current week if we
+  // have one newer than the latest confirmed week; otherwise the confirmed value.
+  const hasProjection = summary.projection &&
+    summary.projection.projected_tier_name &&
+    (summary.projection.iso_year > summary.iso_year ||
+     (summary.projection.iso_year === summary.iso_year &&
+      summary.projection.iso_week > summary.iso_week));
+
+  const hero = hasProjection
+    ? {
+        level: summary.projection.projected_tier_level,
+        tier_name: summary.projection.projected_tier_name,
+        ratio: summary.projection.projected_seasonal_ratio,
+        iso_year: summary.projection.iso_year,
+        iso_week: summary.projection.iso_week,
+        is_projected: true,
+      }
+    : {
+        level: summary.tier_level,
+        tier_name: summary.tier_name,
+        ratio: summary.city_seasonal_ratio,
+        iso_year: summary.iso_year,
+        iso_week: summary.iso_week,
+        is_projected: false,
+      };
+
+  document.getElementById("level-num").textContent = hero.level;
+  const tierEl = document.getElementById("tier-name");
+  tierEl.textContent = hero.tier_name;
+  const tierColor = TIER_COLORS[hero.level] || "var(--accent)";
+  tierEl.style.color = tierColor;
+  document.getElementById("mask").style.fill = tierColor;
+
+  const ratioEl = document.getElementById("ratio");
+  ratioEl.textContent = hero.ratio != null ? Number(hero.ratio).toFixed(2) + "×" : "—";
+  ratioEl.style.color = tierColor;
+
+  if (hero.is_projected) {
     const p = summary.projection;
-    const isNewer = p.iso_year > summary.iso_year ||
-                    (p.iso_year === summary.iso_year && p.iso_week > summary.iso_week);
-    if (isNewer && p.projected_tier_name) {
-      const pColor = TIER_COLORS[p.projected_tier_level] || "var(--accent)";
-      const pRatio = p.projected_seasonal_ratio != null
-                     ? Number(p.projected_seasonal_ratio).toFixed(2) + "×"
-                     : "—";
-      const nameEl = document.getElementById("proj-tier-name");
-      const ratioEl = document.getElementById("proj-ratio");
-      nameEl.textContent = p.projected_tier_name;
-      nameEl.style.color = pColor;
-      ratioEl.textContent = pRatio;
-      ratioEl.style.color = pColor;
-      document.getElementById("proj-sub").textContent =
-        `Estimate for week of ${formatIsoWeekStart(p.iso_year, p.iso_week)}, from the trailing ${p.trailing_weeks}-week trend. Actual data won't publish for ~2–3 weeks.`;
-      document.getElementById("projection").style.display = "block";
-    }
+    document.getElementById("status-line").textContent =
+      `Estimate from the trailing ${p.trailing_weeks}-week trend. Actual 311 data for this week won't publish for ~2–3 weeks.`;
+    document.getElementById("period-stamp").textContent =
+      `Estimated · Week of ${formatIsoWeekStart(hero.iso_year, hero.iso_week)}`;
+    document.getElementById("lag-note").style.display = "none";
+
+    // Show the confirmed block beneath.
+    const conf = document.getElementById("confirmed-block");
+    const confColor = TIER_COLORS[summary.tier_level] || "var(--accent)";
+    const confRatio = summary.city_seasonal_ratio != null
+                      ? Number(summary.city_seasonal_ratio).toFixed(2) + "×"
+                      : "—";
+    document.getElementById("conf-period").textContent =
+      `Week of ${formatIsoWeekStart(summary.iso_year, summary.iso_week)}`;
+    const confTierEl = document.getElementById("conf-tier");
+    confTierEl.textContent = summary.tier_name;
+    confTierEl.style.color = confColor;
+    document.getElementById("conf-ratio").textContent = confRatio;
+    document.getElementById("conf-ratio").style.color = confColor;
+    document.getElementById("conf-sub").textContent =
+      `${summary.wards_elevated} of ${summary.wards_total} wards were above baseline.`;
+    conf.style.display = "block";
+  } else {
+    // Fallback: no projection available. Keep the original behaviour.
+    const elevated = summary.wards_elevated, total = summary.wards_total;
+    const verb = elevated >= total * 0.7 ? "across"
+               : elevated >= total * 0.4 ? "in"
+               : "in just";
+    document.getElementById("status-line").textContent =
+      `Activity is elevated ${verb} ${elevated} of ${total} wards this week.`;
+    document.getElementById("period-stamp").textContent =
+      `Week of ${formatIsoWeekStart(hero.iso_year, hero.iso_week)}`;
   }
 
   // Trash Panda callout
