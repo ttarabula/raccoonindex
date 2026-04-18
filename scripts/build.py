@@ -87,6 +87,28 @@ WEIGHTS = {
     "litter_overflow": 0.75,
 }
 
+# Tier thresholds keyed off seasonal ratio. Shared between city-wide, projection,
+# and per-ward assignments so the scale means the same thing everywhere.
+TIERS = [
+    (0.60, 1, "DEN DORMANCY"),
+    (0.90, 2, "BIN ADVISORY"),
+    (1.10, 3, "MASK ON"),
+    (1.40, 4, "BIN BREACH"),
+    (float("inf"), 5, "PANDAMONIUM"),
+]
+
+
+def assign_tier(ratio):
+    """Map a seasonal ratio to (tier_level, tier_name). None → (None, None)."""
+    if ratio is None:
+        return None, None
+    r = float(ratio)
+    for upper, lvl, name in TIERS:
+        if r < upper:
+            return lvl, name
+    last = TIERS[-1]
+    return last[1], last[2]
+
 
 def unpack_all() -> None:
     UNPACK.mkdir(exist_ok=True)
@@ -266,20 +288,23 @@ def main() -> None:
         [latest_y, latest_w],
     ).fetchall()
 
+    def _ward_entry(row):
+        tier_level, tier_name = assign_tier(row[3])
+        return {
+            "ward": row[0],
+            "raw_score": row[1],
+            "season_mean": row[2],
+            "seasonal_ratio": row[3],
+            "tier_level": tier_level,
+            "tier_name": tier_name,
+            "components": dict(zip(cats, row[4:])),
+        }
+
     index_latest = {
         "iso_year": latest_y,
         "iso_week": latest_w,
         "weights": WEIGHTS,
-        "wards": [
-            {
-                "ward": row[0],
-                "raw_score": row[1],
-                "season_mean": row[2],
-                "seasonal_ratio": row[3],
-                "components": dict(zip(cats, row[4:])),
-            }
-            for row in latest
-        ],
+        "wards": [_ward_entry(row) for row in latest],
     }
     (PROC / "index_latest.json").write_text(json.dumps(index_latest, indent=2, default=_json_default))
     print(f"Wrote {PROC / 'index_latest.json'} — {len(latest)} wards")
@@ -344,20 +369,9 @@ def main() -> None:
     city_raw_now = float(city_now[0]) if city_now[0] is not None else 0.0
     city_ratio_now = float(city_now[1]) if city_now[1] is not None else None
 
-    # Tier thresholds keyed off city-wide seasonal ratio (deadpan civic-alert parody).
-    TIERS = [
-        (0.60, 1, "DEN DORMANCY"),
-        (0.90, 2, "BIN ADVISORY"),
-        (1.10, 3, "MASK ON"),
-        (1.40, 4, "BIN BREACH"),
-        (float("inf"), 5, "PANDAMONIUM"),
-    ]
-    tier_level, tier_name = 3, "MASK ON"
-    if city_ratio_now is not None:
-        for upper, lvl, name in TIERS:
-            if city_ratio_now < upper:
-                tier_level, tier_name = lvl, name
-                break
+    tier_level, tier_name = assign_tier(city_ratio_now)
+    if tier_level is None:
+        tier_level, tier_name = 3, "MASK ON"
 
     # Prior week for biggest-mover computation.
     prior_y, prior_w = recent_weeks[2] if len(recent_weeks) >= 3 else (None, None)
@@ -438,11 +452,9 @@ def main() -> None:
     if trailing_mean is not None and proj_baseline is not None:
         proj_raw = proj_baseline * trailing_mean
         proj_ratio = trailing_mean  # by construction
-        proj_tier_level, proj_tier_name = 3, "MASK ON"
-        for upper, lvl, name in TIERS:
-            if proj_ratio < upper:
-                proj_tier_level, proj_tier_name = lvl, name
-                break
+        proj_tier_level, proj_tier_name = assign_tier(proj_ratio)
+        if proj_tier_level is None:
+            proj_tier_level, proj_tier_name = 3, "MASK ON"
         projection = {
             "iso_year": proj_year,
             "iso_week": proj_week,

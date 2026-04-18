@@ -71,6 +71,26 @@
   .ward-name { font-size: 1.2rem; margin-bottom: 0.1rem; }
   .ward-meta { color: var(--dim); font-size: 0.85rem; margin-bottom: 1rem; }
 
+  .ward-tier {
+    display: flex; align-items: baseline; gap: 0.7rem;
+    margin: 0.2rem 0 1rem;
+    font-family: "ui-sans-serif", system-ui, sans-serif;
+  }
+  .ward-tier .lvl-k { font-size: 0.7rem; color: var(--dim);
+    text-transform: uppercase; letter-spacing: 0.12em; }
+  .ward-tier .lvl-n { font-size: 2.2rem; font-weight: 700; line-height: 1;
+    font-family: "ui-monospace", Menlo, monospace; }
+  .ward-tier .name { font-size: 1.4rem; font-weight: 700;
+    letter-spacing: -0.01em; }
+
+  .tier-pill {
+    display: inline-block; padding: 0.12rem 0.5rem;
+    border-radius: 3px; font-family: "ui-sans-serif", system-ui, sans-serif;
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase; white-space: nowrap;
+    color: var(--bg); /* dark text on colored background */
+  }
+
   .metric { display: flex; justify-content: space-between; align-items: baseline;
     padding: 0.4rem 0; border-bottom: 1px dotted var(--rule); }
   .metric .label { color: var(--dim); font-size: 0.9rem; }
@@ -138,6 +158,7 @@
       <tr>
         <th>Rank</th>
         <th>Ward</th>
+        <th>Tier</th>
         <th style="text-align:right">Score</th>
         <th style="text-align:right">vs. seasonal ↓</th>
       </tr>
@@ -197,6 +218,10 @@
     garbage_missed: "Missed garbage / organics pickup",
   };
 
+  const TIER_COLORS = {
+    1: "#5b8fa8", 2: "#6fa0b0", 3: "#c8d18a", 4: "#d89b5f", 5: "#d85c3f",
+  };
+
   const [indexData, trendData, wardsGeo] = await Promise.all([
     fetch("data/index_latest.json").then(r => r.json()),
     fetch("data/ward_trend.json").then(r => r.json()),
@@ -219,17 +244,13 @@
     });
   }
 
-  // Compute score range for choropleth.
-  const scores = indexData.wards.map(w => w.raw_score);
-  const minScore = Math.min(...scores);
-  const maxScore = Math.max(...scores);
-
-  // Attach score to each geojson feature for MapLibre paint.
+  // Attach tier + score + ratio to each geojson feature for MapLibre paint.
   for (const feat of wardsGeo.features) {
     const code = feat.properties.ward;
     const rec = indexData.by_ward[code];
     feat.properties.score = rec ? rec.raw_score : null;
-    feat.properties.ratio = rec ? (rec.seasonal_ratio ? Number(rec.seasonal_ratio) : null) : null;
+    feat.properties.ratio = rec && rec.seasonal_ratio != null ? Number(rec.seasonal_ratio) : null;
+    feat.properties.tier_level = rec && rec.tier_level != null ? rec.tier_level : 0;
   }
 
   // Map
@@ -269,12 +290,15 @@
       source: "wards",
       paint: {
         "fill-color": [
-          "interpolate", ["linear"], ["coalesce", ["get", "score"], 0],
-          minScore, "#5b8fa8",   // cold / blue-grey
-          (minScore + maxScore) / 2, "#c8d18a", // mid / pale green-yellow
-          maxScore, "#d85c3f",   // hot / rust
+          "match", ["get", "tier_level"],
+          1, "#5b8fa8",   // DEN DORMANCY
+          2, "#6fa0b0",   // BIN ADVISORY
+          3, "#c8d18a",   // MASK ON
+          4, "#d89b5f",   // BIN BREACH
+          5, "#d85c3f",   // PANDAMONIUM
+          "#3a3c40"       // no data fallback
         ],
-        "fill-opacity": 0.72,
+        "fill-opacity": 0.78,
       },
     });
     map.addLayer({
@@ -300,11 +324,16 @@
     tr.dataset.ward = w.ward;
     const ratio = w.seasonal_ratio !== null ? Number(w.seasonal_ratio) : null;
     const ratioCell = ratio !== null ? ratio.toFixed(2) + "×" : "—";
+    const tierColor = TIER_COLORS[w.tier_level] || "var(--rule)";
+    const tierPill = w.tier_name
+      ? `<span class="tier-pill" style="background:${tierColor}">${w.tier_name}</span>`
+      : "—";
     tr.innerHTML = `
       <td class="rank">${i + 1}</td>
       <td>${wardName} <span style="color:var(--dim)">(${w.ward})</span></td>
+      <td>${tierPill}</td>
       <td class="score">${Number(w.raw_score).toFixed(1)}</td>
-      <td class="ratio" style="color:${ratio !== null && ratio >= 1 ? "var(--hot)" : "var(--cold)"}">${ratioCell}</td>
+      <td class="ratio" style="color:${tierColor}">${ratioCell}</td>
     `;
     tr.addEventListener("click", () => showWard(w.ward));
     lbBody.appendChild(tr);
@@ -331,9 +360,18 @@
       .map(([k, n]) => `<div class="metric"><span class="label">${CATEGORY_LABELS[k] || k}</span><span class="value">${n}</span></div>`)
       .join("");
 
+    const tierColor = TIER_COLORS[rec.tier_level] || "var(--accent)";
+    const tierBlock = rec.tier_name
+      ? `<div class="ward-tier">
+           <span class="lvl-k">Level</span>
+           <span class="lvl-n" style="color:${tierColor}">${rec.tier_level}</span>
+           <span class="name" style="color:${tierColor}">${rec.tier_name}</span>
+         </div>`
+      : "";
     document.getElementById("panel").innerHTML = `
       <div class="ward-name">${name}</div>
       <div class="ward-meta">Ward ${wardCode}</div>
+      ${tierBlock}
       <div class="big">
         <div>
           <div class="k">Index</div>
@@ -341,7 +379,7 @@
         </div>
         <div>
           <div class="k">vs. seasonal</div>
-          <div class="n" style="color:${ratio !== null && ratio >= 1 ? "var(--hot)" : "var(--cold)"}">${ratioStr}</div>
+          <div class="n" style="color:${tierColor}">${ratioStr}</div>
         </div>
       </div>
       <svg id="sparkline"></svg>
