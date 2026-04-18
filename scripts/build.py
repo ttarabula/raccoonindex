@@ -253,12 +253,15 @@ def main() -> None:
     print(f"\nLatest period: ISO {latest_y}-W{latest_w:02d}")
 
     cat_select = ", ".join(cats)
+    # Sort by seasonal ratio DESC so consumers (leaderboard) show self-normalized
+    # rank. Raw score alone biases toward dense/populous wards. Wards without a
+    # baseline (no historical data) sort last.
     latest = con.execute(
         f"""
         SELECT ward, raw_score, season_mean, seasonal_ratio, {cat_select}
         FROM weekly_ward_index
         WHERE iso_year = ? AND iso_week = ?
-        ORDER BY raw_score DESC
+        ORDER BY seasonal_ratio DESC NULLS LAST, raw_score DESC
         """,
         [latest_y, latest_w],
     ).fetchall()

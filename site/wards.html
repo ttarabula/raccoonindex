@@ -126,13 +126,14 @@
 
 <section class="leaderboard">
   <h2>Ward leaderboard</h2>
+  <p style="color:var(--dim);font-size:0.85rem;margin:0 0 0.8rem">Ranked by how much each ward is above its own seasonal baseline — self-normalized so dense wards don't automatically win.</p>
   <table>
     <thead>
       <tr>
         <th>Rank</th>
         <th>Ward</th>
         <th style="text-align:right">Score</th>
-        <th style="text-align:right">vs. seasonal</th>
+        <th style="text-align:right">vs. seasonal ↓</th>
       </tr>
     </thead>
     <tbody id="leaderboard-body"></tbody>
@@ -158,6 +159,13 @@
     of open data signals that raccoons would plausibly drive. 311 data reflects
     who calls in, not what actually happens — tree-lined neighbourhoods with more
     civically engaged residents will appear more active.
+  </p>
+  <p>
+    The ward leaderboard is ranked by <em>seasonal ratio</em>, not raw score, so
+    dense downtown wards don't automatically dominate. The raw <em>Score</em> column
+    is <strong>not</strong> per-capita or per-area — bigger, denser, more-wired-in
+    wards naturally generate more 311 calls. Seasonal ratio self-normalizes because
+    each ward is being compared to its own historical baseline.
   </p>
   <p>
     Source: <a href="https://open.toronto.ca/dataset/311-service-requests-customer-initiated/">311 Service Requests — Customer Initiated</a>, open.toronto.ca.
