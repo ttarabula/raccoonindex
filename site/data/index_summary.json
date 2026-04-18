@@ -2,14 +2,16 @@
   "iso_year": 2026,
   "iso_week": 13,
   "city_raw_score": 1857.75,
-  "city_seasonal_ratio": 1.1623044838373306,
-  "tier_level": 4,
-  "tier_name": "BIN BREACH",
-  "wards_elevated": 18,
+  "city_seasonal_ratio": 1.0775030812731095,
+  "city_seasonal_ratio_ci_low": 1.0335629764630623,
+  "city_seasonal_ratio_ci_high": 1.1214431860831566,
+  "tier_level": 3,
+  "tier_name": "MASK ON",
+  "wards_elevated": 15,
   "wards_total": 25,
   "trash_panda": {
     "ward": "07",
-    "seasonal_ratio": 1.9271523178807948,
+    "seasonal_ratio": 2.0601769911504424,
     "raw_score": 72.75
   },
   "biggest_mover": {
@@ -23,323 +25,325 @@
       "iso_year": 2025,
       "iso_week": 15,
       "raw_score": 2340.75,
-      "ratio": 1.2140557128346983
+      "ratio": 1.0841197244254037
     },
     {
       "iso_year": 2025,
       "iso_week": 16,
       "raw_score": 2361.0,
-      "ratio": 1.317399795405933
+      "ratio": 1.1857618180676752
     },
     {
       "iso_year": 2025,
       "iso_week": 17,
       "raw_score": 2657.25,
-      "ratio": 1.4048374306106266
+      "ratio": 1.2835018867924528
     },
     {
       "iso_year": 2025,
       "iso_week": 18,
       "raw_score": 2909.25,
-      "ratio": 1.3884149615224006
+      "ratio": 1.276406712734452
     },
     {
       "iso_year": 2025,
       "iso_week": 19,
       "raw_score": 3176.0,
-      "ratio": 1.3647985675917635
+      "ratio": 1.2532925566023776
     },
     {
       "iso_year": 2025,
       "iso_week": 20,
       "raw_score": 3118.0,
-      "ratio": 1.3101528441619832
+      "ratio": 1.2449280063883412
     },
     {
       "iso_year": 2025,
       "iso_week": 21,
       "raw_score": 2542.0,
-      "ratio": 1.0842397099594798
+      "ratio": 1.0166220911340516
     },
     {
       "iso_year": 2025,
       "iso_week": 22,
       "raw_score": 3060.25,
-      "ratio": 1.1738400805510716
+      "ratio": 1.1258421282564208
     },
     {
       "iso_year": 2025,
       "iso_week": 23,
       "raw_score": 3094.25,
-      "ratio": 1.229401539607648
+      "ratio": 1.1722031490469988
     },
     {
       "iso_year": 2025,
       "iso_week": 24,
       "raw_score": 3089.0,
-      "ratio": 1.2234672827791073
+      "ratio": 1.1554952890842354
     },
     {
       "iso_year": 2025,
       "iso_week": 25,
       "raw_score": 3162.25,
-      "ratio": 1.2689818917518016
+      "ratio": 1.2326057298772168
     },
     {
       "iso_year": 2025,
       "iso_week": 26,
       "raw_score": 2874.75,
-      "ratio": 1.2401632124818005
+      "ratio": 1.2257755036776463
     },
     {
       "iso_year": 2025,
       "iso_week": 27,
       "raw_score": 3082.5,
-      "ratio": 1.261273548717074
+      "ratio": 1.2069598414213347
     },
     {
       "iso_year": 2025,
       "iso_week": 28,
       "raw_score": 3083.75,
-      "ratio": 1.249472422467206
+      "ratio": 1.2222552516845027
     },
     {
       "iso_year": 2025,
       "iso_week": 29,
       "raw_score": 3090.25,
-      "ratio": 1.2718822883797503
+      "ratio": 1.286665972728219
     },
     {
       "iso_year": 2025,
       "iso_week": 30,
       "raw_score": 3087.25,
-      "ratio": 1.2478989473684208
+      "ratio": 1.2254335260115607
     },
     {
       "iso_year": 2025,
       "iso_week": 31,
       "raw_score": 3292.0,
-      "ratio": 1.2866495130768982
+      "ratio": 1.2723934679679196
     },
     {
       "iso_year": 2025,
       "iso_week": 32,
       "raw_score": 3359.0,
-      "ratio": 1.3395589970256394
+      "ratio": 1.348183825005017
     },
     {
       "iso_year": 2025,
       "iso_week": 33,
       "raw_score": 3136.25,
-      "ratio": 1.212389665614329
+      "ratio": 1.1992734572917165
     },
     {
       "iso_year": 2025,
       "iso_week": 34,
       "raw_score": 3012.25,
-      "ratio": 1.213291935889905
+      "ratio": 1.2157812421169467
     },
     {
       "iso_year": 2025,
       "iso_week": 35,
       "raw_score": 2890.75,
-      "ratio": 1.1374561432272026
+      "ratio": 1.157747183979975
     },
     {
       "iso_year": 2025,
       "iso_week": 36,
       "raw_score": 3250.5,
-      "ratio": 1.226468784882167
+      "ratio": 1.2303470464384567
     },
     {
       "iso_year": 2025,
       "iso_week": 37,
       "raw_score": 3367.5,
-      "ratio": 1.2620828583475179
+      "ratio": 1.2481178623549307
     },
     {
       "iso_year": 2025,
       "iso_week": 38,
       "raw_score": 3607.25,
-      "ratio": 1.3206919697339512
+      "ratio": 1.2854056702523329
     },
     {
       "iso_year": 2025,
       "iso_week": 39,
       "raw_score": 3373.25,
-      "ratio": 1.2752303693785931
+      "ratio": 1.2883605461663326
     },
     {
       "iso_year": 2025,
       "iso_week": 40,
       "raw_score": 3399.5,
-      "ratio": 1.3304849809203871
+      "ratio": 1.3036454713227716
     },
     {
       "iso_year": 2025,
       "iso_week": 41,
       "raw_score": 2731.75,
-      "ratio": 1.1078592068132278
+      "ratio": 1.1321556234782157
     },
     {
       "iso_year": 2025,
       "iso_week": 42,
       "raw_score": 2611.5,
-      "ratio": 1.1161250111299084
+      "ratio": 1.142263531984691
     },
     {
       "iso_year": 2025,
       "iso_week": 43,
       "raw_score": 2539.5,
-      "ratio": 1.1796995973985756
+      "ratio": 1.146113054270563
     },
     {
       "iso_year": 2025,
       "iso_week": 44,
       "raw_score": 2221.25,
-      "ratio": 0.9812691891414315
+      "ratio": 1.0302942455428323
     },
     {
       "iso_year": 2025,
       "iso_week": 45,
       "raw_score": 2313.75,
-      "ratio": 0.9970696602098642
+      "ratio": 1.061383640586026
     },
     {
       "iso_year": 2025,
       "iso_week": 46,
       "raw_score": 1986.0,
-      "ratio": 0.9605571812048075
+      "ratio": 1.0224925185828748
     },
     {
       "iso_year": 2025,
       "iso_week": 47,
       "raw_score": 2359.75,
-      "ratio": 1.2307030353603843
+      "ratio": 1.2903622693096377
     },
     {
       "iso_year": 2025,
       "iso_week": 48,
       "raw_score": 2489.75,
-      "ratio": 1.3929840266316051
+      "ratio": 1.431919482386772
     },
     {
       "iso_year": 2025,
       "iso_week": 49,
       "raw_score": 2050.75,
-      "ratio": 1.2198495077774143
+      "ratio": 1.2646265320280583
     },
     {
       "iso_year": 2025,
       "iso_week": 50,
       "raw_score": 1882.5,
-      "ratio": 1.158283341024458
+      "ratio": 1.2010048247537781
     },
     {
       "iso_year": 2025,
       "iso_week": 51,
       "raw_score": 2193.0,
-      "ratio": 1.5332447738236736
+      "ratio": 1.6245948698953607
     },
     {
       "iso_year": 2025,
       "iso_week": 52,
       "raw_score": 1604.0,
-      "ratio": 1.466570155053526
+      "ratio": 1.2613781578688685
     },
     {
       "iso_year": 2026,
       "iso_week": 1,
       "raw_score": 2062.5,
-      "ratio": 1.367705570291777
+      "ratio": 1.34342940889106
     },
     {
       "iso_year": 2026,
       "iso_week": 2,
       "raw_score": 2405.5,
-      "ratio": 1.6324614732079739
+      "ratio": 1.5943661971830987
     },
     {
       "iso_year": 2026,
       "iso_week": 3,
       "raw_score": 1984.25,
-      "ratio": 1.3833551198257084
+      "ratio": 1.339860730111838
     },
     {
       "iso_year": 2026,
       "iso_week": 4,
       "raw_score": 1495.5,
-      "ratio": 1.0857938044530495
+      "ratio": 1.0392633773453788
     },
     {
       "iso_year": 2026,
       "iso_week": 5,
       "raw_score": 1528.25,
-      "ratio": 1.0965022421524662
+      "ratio": 1.0694541637508748
     },
     {
       "iso_year": 2026,
       "iso_week": 6,
       "raw_score": 1520.0,
-      "ratio": 1.0183401725148649
+      "ratio": 0.9492954447870721
     },
     {
       "iso_year": 2026,
       "iso_week": 7,
       "raw_score": 1358.0,
-      "ratio": 1.0054604349838037
+      "ratio": 0.9349397590361446
     },
     {
       "iso_year": 2026,
       "iso_week": 8,
       "raw_score": 1427.5,
-      "ratio": 1.0083885209713026
+      "ratio": 1.0043533705641792
     },
     {
       "iso_year": 2026,
       "iso_week": 9,
       "raw_score": 1480.25,
-      "ratio": 1.008087171192645
+      "ratio": 1.0213903743315509
     },
     {
       "iso_year": 2026,
       "iso_week": 10,
       "raw_score": 1710.25,
-      "ratio": 1.102675693101225
+      "ratio": 1.1923831103751799
     },
     {
       "iso_year": 2026,
       "iso_week": 11,
       "raw_score": 1929.75,
-      "ratio": 1.1502297280516576
+      "ratio": 1.1993008351136143
     },
     {
       "iso_year": 2026,
       "iso_week": 12,
       "raw_score": 1639.75,
-      "ratio": 0.9901871980676327
+      "ratio": 0.9662995838090678
     },
     {
       "iso_year": 2026,
       "iso_week": 13,
       "raw_score": 1857.75,
-      "ratio": 1.1623044838373306
+      "ratio": 1.0775030812731095
     },
     {
       "iso_year": 2026,
       "iso_week": 14,
       "raw_score": 680.75,
-      "ratio": 0.39985315712187947
+      "ratio": 0.37195642522965544
     }
   ],
   "projection": {
     "iso_year": 2026,
     "iso_week": 16,
-    "baseline": 1792.1666666666667,
+    "baseline": 1991.125,
     "trailing_weeks": 4,
-    "trailing_ratio_mean": 1.1013492757644614,
-    "projected_raw_score": 1973.8014603825422,
-    "projected_seasonal_ratio": 1.1013492757644614,
+    "trailing_ratio_mean": 1.108871652642743,
+    "projected_raw_score": 2207.9020693682814,
+    "projected_seasonal_ratio": 1.108871652642743,
+    "projected_seasonal_ratio_ci_low": 1.0181945151642264,
+    "projected_seasonal_ratio_ci_high": 1.1995487901212594,
     "projected_tier_level": 4,
     "projected_tier_name": "BIN BREACH"
   }

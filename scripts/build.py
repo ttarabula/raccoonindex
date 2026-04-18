@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 import re
+import statistics
 import zipfile
 from decimal import Decimal
 from pathlib import Path
@@ -97,6 +99,11 @@ TIERS = [
     (float("inf"), 5, "PANDAMONIUM"),
 ]
 
+# Years used for the seasonal baseline. Excludes 2020–2021 because pandemic-era
+# 311 call patterns are unrepresentative (WFH + lockdown distortions).
+BASELINE_YEARS = (2019, 2022, 2023, 2024)
+BASELINE_YEARS_SQL = "(" + ",".join(str(y) for y in BASELINE_YEARS) + ")"
+
 
 def assign_tier(ratio):
     """Map a seasonal ratio to (tier_level, tier_name). None → (None, None)."""
@@ -108,6 +115,33 @@ def assign_tier(ratio):
             return lvl, name
     last = TIERS[-1]
     return last[1], last[2]
+
+
+# Z-score for a 90% two-sided credible interval under the normal approximation.
+CI_Z = 1.645
+
+
+def ratio_ci(components, baseline):
+    """Approximate 90% CI on (weighted sum of counts) / baseline.
+
+    Treats each category's count as independent Poisson (variance = count),
+    so the weighted sum has variance = sum(w² · n). Baseline is treated as
+    known (its uncertainty across 4 baseline years is small relative to the
+    single-week Poisson noise).
+    """
+    if baseline is None or float(baseline) <= 0:
+        return None, None
+    raw = 0.0
+    var = 0.0
+    for cat, n in components.items():
+        w = WEIGHTS.get(cat, 1.0)
+        raw += w * float(n)
+        var += w * w * float(n)
+    if raw <= 0 or var <= 0:
+        return None, None
+    se = math.sqrt(var) / float(baseline)
+    ratio = raw / float(baseline)
+    return max(0.0, ratio - CI_Z * se), ratio + CI_Z * se
 
 
 def unpack_all() -> None:
@@ -239,12 +273,11 @@ def main() -> None:
             FROM weekly_ward_wide
         ),
         baseline AS (
-            -- Seasonal baseline uses only 2019–2024, since Toronto switched from the
-            -- 44-ward to the 25-ward model in late 2018. Pre-2019 ward codes refer
-            -- to different geography and must not contaminate the baseline.
+            -- Seasonal baseline excludes 2020–2021 (pandemic distortions) and any
+            -- pre-2019 data (44-ward model uses different geography).
             SELECT ward, iso_week, AVG(raw_score) AS season_mean
             FROM scored
-            WHERE iso_year BETWEEN 2019 AND 2024
+            WHERE iso_year IN """ + BASELINE_YEARS_SQL + """
             GROUP BY ward, iso_week
         )
         SELECT s.*,
@@ -290,14 +323,22 @@ def main() -> None:
 
     def _ward_entry(row):
         tier_level, tier_name = assign_tier(row[3])
+        components = dict(zip(cats, row[4:]))
+        ci_lo, ci_hi = ratio_ci(components, row[2])
+        tier_lo = assign_tier(ci_lo)[0] if ci_lo is not None else tier_level
+        tier_hi = assign_tier(ci_hi)[0] if ci_hi is not None else tier_level
         return {
             "ward": row[0],
             "raw_score": row[1],
             "season_mean": row[2],
             "seasonal_ratio": row[3],
+            "seasonal_ratio_ci_low": ci_lo,
+            "seasonal_ratio_ci_high": ci_hi,
             "tier_level": tier_level,
             "tier_name": tier_name,
-            "components": dict(zip(cats, row[4:])),
+            "tier_level_ci_low": tier_lo,
+            "tier_level_ci_high": tier_hi,
+            "components": components,
         }
 
     index_latest = {
@@ -373,6 +414,22 @@ def main() -> None:
     if tier_level is None:
         tier_level, tier_name = 3, "MASK ON"
 
+    # City-wide CI: sum Poisson variance across wards, then divide by the
+    # (summed) baseline that drives the city_ratio.
+    city_ci_low = city_ci_high = None
+    if city_ratio_now is not None:
+        total_var = 0.0
+        total_baseline = 0.0
+        for w_row in index_latest["wards"]:
+            total_baseline += float(w_row["season_mean"] or 0.0)
+            for cat, n in w_row["components"].items():
+                w_c = WEIGHTS.get(cat, 1.0)
+                total_var += w_c * w_c * float(n)
+        if total_baseline > 0 and total_var > 0:
+            se = math.sqrt(total_var) / total_baseline
+            city_ci_low = max(0.0, city_ratio_now - CI_Z * se)
+            city_ci_high = city_ratio_now + CI_Z * se
+
     # Prior week for biggest-mover computation.
     prior_y, prior_w = recent_weeks[2] if len(recent_weeks) >= 3 else (None, None)
     biggest_mover = None
@@ -437,12 +494,20 @@ def main() -> None:
         """,
         [latest_y, latest_y, latest_w, TRAIL_N],
     ).fetchall()
-    trailing_mean = (sum(float(r[0]) for r in trailing) / len(trailing)) if trailing else None
+    trailing_values = [float(r[0]) for r in trailing]
+    trailing_mean = (sum(trailing_values) / len(trailing_values)) if trailing_values else None
+    # Projection CI from the variability of trailing weekly ratios. Uses sample
+    # std / sqrt(n); falls back to None when we have fewer than 2 observations.
+    if trailing_mean is not None and len(trailing_values) >= 2:
+        trailing_sd = statistics.stdev(trailing_values)
+        trailing_se = trailing_sd / math.sqrt(len(trailing_values))
+    else:
+        trailing_se = None
 
     proj_baseline_row = con.execute(
-        """
+        f"""
         SELECT AVG(city_raw) FROM weekly_city
-        WHERE iso_year BETWEEN 2019 AND 2024 AND iso_week = ?
+        WHERE iso_year IN {BASELINE_YEARS_SQL} AND iso_week = ?
         """,
         [proj_week],
     ).fetchone()
@@ -455,6 +520,8 @@ def main() -> None:
         proj_tier_level, proj_tier_name = assign_tier(proj_ratio)
         if proj_tier_level is None:
             proj_tier_level, proj_tier_name = 3, "MASK ON"
+        proj_ci_low = max(0.0, proj_ratio - CI_Z * trailing_se) if trailing_se is not None else None
+        proj_ci_high = proj_ratio + CI_Z * trailing_se if trailing_se is not None else None
         projection = {
             "iso_year": proj_year,
             "iso_week": proj_week,
@@ -463,6 +530,8 @@ def main() -> None:
             "trailing_ratio_mean": trailing_mean,
             "projected_raw_score": proj_raw,
             "projected_seasonal_ratio": proj_ratio,
+            "projected_seasonal_ratio_ci_low": proj_ci_low,
+            "projected_seasonal_ratio_ci_high": proj_ci_high,
             "projected_tier_level": proj_tier_level,
             "projected_tier_name": proj_tier_name,
         }
@@ -472,6 +541,8 @@ def main() -> None:
         "iso_week": latest_w,
         "city_raw_score": city_raw_now,
         "city_seasonal_ratio": city_ratio_now,
+        "city_seasonal_ratio_ci_low": city_ci_low,
+        "city_seasonal_ratio_ci_high": city_ci_high,
         "tier_level": tier_level,
         "tier_name": tier_name,
         "wards_elevated": wards_elevated,

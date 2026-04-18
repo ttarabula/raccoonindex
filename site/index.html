@@ -91,6 +91,8 @@
   .ratio-line { font-size: 1.2rem; color: var(--dim); }
   .ratio-line .big { color: var(--fg); font-family: "ui-monospace", Menlo, monospace;
     font-weight: 700; font-size: 1.5rem; }
+  .ratio-ci { display: block; margin-top: 0.25rem; font-size: 0.8rem; color: var(--dim);
+    font-family: "ui-monospace", Menlo, monospace; }
 
   .status-line {
     color: var(--dim); font-size: 1.05rem;
@@ -264,7 +266,10 @@
       <span class="lvl-n" id="level-num">—</span>
     </div>
     <div class="tier-name" id="tier-name" style="color: var(--t3)">LOADING</div>
-    <div class="ratio-line">Activity is <span class="big" id="ratio">—</span> the seasonal baseline.</div>
+    <div class="ratio-line">
+      Activity is <span class="big" id="ratio">—</span> the seasonal baseline.
+      <span class="ratio-ci" id="ratio-ci"></span>
+    </div>
     <div class="status-line" id="status-line">Loading weekly readings…</div>
     <div class="period-stamp" id="period-stamp">—</div>
     <div class="lag-note" id="lag-note">Toronto 311 publishes on a 2–3 week delay; this is the latest complete week.</div>
@@ -375,6 +380,8 @@
         level: summary.projection.projected_tier_level,
         tier_name: summary.projection.projected_tier_name,
         ratio: summary.projection.projected_seasonal_ratio,
+        ci_low: summary.projection.projected_seasonal_ratio_ci_low,
+        ci_high: summary.projection.projected_seasonal_ratio_ci_high,
         iso_year: summary.projection.iso_year,
         iso_week: summary.projection.iso_week,
         is_projected: true,
@@ -383,6 +390,8 @@
         level: summary.tier_level,
         tier_name: summary.tier_name,
         ratio: summary.city_seasonal_ratio,
+        ci_low: summary.city_seasonal_ratio_ci_low,
+        ci_high: summary.city_seasonal_ratio_ci_high,
         iso_year: summary.iso_year,
         iso_week: summary.iso_week,
         is_projected: false,
@@ -398,6 +407,10 @@
   const ratioEl = document.getElementById("ratio");
   ratioEl.textContent = hero.ratio != null ? Number(hero.ratio).toFixed(2) + "×" : "—";
   ratioEl.style.color = tierColor;
+  if (hero.ci_low != null && hero.ci_high != null) {
+    document.getElementById("ratio-ci").textContent =
+      `90% CI: ${Number(hero.ci_low).toFixed(2)}–${Number(hero.ci_high).toFixed(2)}×`;
+  }
 
   if (hero.is_projected) {
     const p = summary.projection;
@@ -420,8 +433,11 @@
     confTierEl.style.color = confColor;
     document.getElementById("conf-ratio").textContent = confRatio;
     document.getElementById("conf-ratio").style.color = confColor;
+    const ciStr = summary.city_seasonal_ratio_ci_low != null
+      ? ` · 90% CI ${Number(summary.city_seasonal_ratio_ci_low).toFixed(2)}–${Number(summary.city_seasonal_ratio_ci_high).toFixed(2)}`
+      : "";
     document.getElementById("conf-sub").textContent =
-      `${summary.wards_elevated} of ${summary.wards_total} wards were above baseline.`;
+      `${summary.wards_elevated} of ${summary.wards_total} wards were above baseline${ciStr}.`;
     conf.style.display = "block";
   } else {
     // Fallback: no projection available. Keep the original behaviour.

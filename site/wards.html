@@ -361,12 +361,19 @@
       .join("");
 
     const tierColor = TIER_COLORS[rec.tier_level] || "var(--accent)";
+    const tierSpread = (rec.tier_level_ci_low != null && rec.tier_level_ci_high != null &&
+                        rec.tier_level_ci_low !== rec.tier_level_ci_high)
+      ? ` <span style="color:var(--dim);font-size:0.8rem;font-weight:400">(might be L${rec.tier_level_ci_low}–${rec.tier_level_ci_high})</span>`
+      : "";
     const tierBlock = rec.tier_name
       ? `<div class="ward-tier">
            <span class="lvl-k">Level</span>
            <span class="lvl-n" style="color:${tierColor}">${rec.tier_level}</span>
-           <span class="name" style="color:${tierColor}">${rec.tier_name}</span>
+           <span class="name" style="color:${tierColor}">${rec.tier_name}</span>${tierSpread}
          </div>`
+      : "";
+    const ratioCiStr = (rec.seasonal_ratio_ci_low != null && rec.seasonal_ratio_ci_high != null)
+      ? `<div style="color:var(--dim);font-size:0.75rem;margin-top:0.2rem">90% CI ${Number(rec.seasonal_ratio_ci_low).toFixed(2)}–${Number(rec.seasonal_ratio_ci_high).toFixed(2)}</div>`
       : "";
     document.getElementById("panel").innerHTML = `
       <div class="ward-name">${name}</div>
@@ -380,6 +387,7 @@
         <div>
           <div class="k">vs. seasonal</div>
           <div class="n" style="color:${tierColor}">${ratioStr}</div>
+          ${ratioCiStr}
         </div>
       </div>
       <svg id="sparkline"></svg>
