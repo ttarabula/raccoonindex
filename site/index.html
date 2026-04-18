@@ -414,8 +414,18 @@
 
   if (hero.is_projected) {
     const p = summary.projection;
+    const w = p.weather || {};
+    let weatherBit = "";
+    if (w.current_week_temp_c != null && w.historical_week_temp_c != null) {
+      const diff = w.current_week_temp_c - w.historical_week_temp_c;
+      const adj = w.adjustment_factor != null ? Number(w.adjustment_factor) : 1;
+      if (Math.abs(adj - 1) > 0.03) {
+        const direction = diff > 0 ? "above" : "below";
+        weatherBit = ` Weather-adjusted: this week averages ${w.current_week_temp_c.toFixed(1)}°C, ${Math.abs(diff).toFixed(1)}°C ${direction} the historical average for this week of the year.`;
+      }
+    }
     document.getElementById("status-line").textContent =
-      `Estimate from the trailing ${p.trailing_weeks}-week trend. Actual 311 data for this week won't publish for ~2–3 weeks.`;
+      `Estimate from the trailing ${p.trailing_weeks}-week trend.${weatherBit} Actual 311 data for this week won't publish for ~2–3 weeks.`;
     document.getElementById("period-stamp").textContent =
       `Estimated · Week of ${formatIsoWeekStart(hero.iso_year, hero.iso_week)}`;
     document.getElementById("lag-note").style.display = "none";

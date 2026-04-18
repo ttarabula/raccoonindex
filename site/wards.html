@@ -177,9 +177,19 @@
     overflowing litter bins).
   </p>
   <p>
-    The <em>vs. seasonal</em> column is the ward's current score divided by its own
-    2019–2024 average for this ISO week. Values above 1.0 mean the ward is more active
-    than usual for this time of year; below 1.0 means quieter.
+    The <em>vs. seasonal</em> column is the ward's current score divided by its
+    2019 + 2022–2024 average for this ISO week. 2020–2021 are excluded because
+    pandemic-era 311 patterns were badly non-representative. Values above 1.0
+    mean the ward is more active than usual for this time of year; below 1.0
+    means quieter. Each ratio carries a 90% credible interval derived from the
+    Poisson noise in each category's weekly count.
+  </p>
+  <p>
+    The current-week projection on the home page blends a 4-week trailing mean
+    with a weather adjustment fit on Toronto City station daily temperatures
+    (β ≈ 0.03 log-ratio per °C, R² ≈ 0.16). Warmer-than-seasonal weeks nudge
+    the projection up; cold snaps nudge it down. Weather is not a forecast;
+    we use observed temps through the current week.
   </p>
   <p>
     None of these records are literally raccoon records. The index is a composite

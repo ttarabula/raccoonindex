@@ -33,6 +33,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
 UNPACK = RAW / "_unpacked"
 PROC = ROOT / "data" / "processed"
+WEATHER_DAILY = RAW / "weather_daily.csv"
 PROC.mkdir(parents=True, exist_ok=True)
 
 YEARS = sorted(int(p.stem[2:]) for p in RAW.glob("sr20*.zip"))
@@ -496,6 +497,94 @@ def main() -> None:
     ).fetchall()
     trailing_values = [float(r[0]) for r in trailing]
     trailing_mean = (sum(trailing_values) / len(trailing_values)) if trailing_values else None
+
+    # Weather integration: regress log(city_ratio) vs current-week temperature
+    # deviation from the historical (baseline years) average for that ISO week.
+    # Apply the resulting β to the current week's temp deviation to shift the
+    # projection up or down. A hot week for March will nudge the projection
+    # higher; a cold snap will nudge it lower.
+    weather_beta = 0.0
+    weather_n = 0
+    weather_r2 = None
+    weather_current_temp = None
+    weather_historical_temp = None
+    weather_factor = 1.0
+    hist_temp_by_iso_week: dict[int, float] = {}
+
+    if WEATHER_DAILY.exists():
+        con.execute(
+            f"""
+            CREATE OR REPLACE VIEW weather_daily AS
+            SELECT CAST(date AS DATE) AS d, CAST(mean_temp_c AS DOUBLE) AS temp
+            FROM read_csv('{WEATHER_DAILY}', header=true, auto_detect=true)
+            """
+        )
+        con.execute(
+            """
+            CREATE OR REPLACE VIEW weekly_weather AS
+            SELECT CAST(ISOYEAR(d) AS INT) AS iso_year,
+                   CAST(WEEK(d) AS INT) AS iso_week,
+                   AVG(temp) AS weekly_temp
+            FROM weather_daily
+            GROUP BY iso_year, iso_week
+            """
+        )
+        hist_temp_by_iso_week = {
+            int(r[0]): float(r[1]) for r in con.execute(
+                f"""
+                SELECT iso_week, AVG(weekly_temp)
+                FROM weekly_weather
+                WHERE iso_year IN {BASELINE_YEARS_SQL}
+                GROUP BY iso_week
+                """
+            ).fetchall()
+        }
+        reg_rows = con.execute(
+            f"""
+            SELECT c.city_ratio, w.weekly_temp, c.iso_week
+            FROM weekly_city c
+            JOIN weekly_weather w USING (iso_year, iso_week)
+            WHERE c.iso_year IN {BASELINE_YEARS_SQL}
+              AND c.city_ratio IS NOT NULL AND c.city_ratio > 0
+              AND w.weekly_temp IS NOT NULL
+            """
+        ).fetchall()
+        xs, ys = [], []
+        for ratio_v, temp_v, iso_w in reg_rows:
+            hist = hist_temp_by_iso_week.get(int(iso_w))
+            if hist is None:
+                continue
+            xs.append(float(temp_v) - hist)
+            ys.append(math.log(float(ratio_v)))
+        if len(xs) >= 10:
+            mean_x = sum(xs) / len(xs)
+            mean_y = sum(ys) / len(ys)
+            cov_xy = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys))
+            var_x = sum((x - mean_x) ** 2 for x in xs)
+            if var_x > 0:
+                weather_beta = cov_xy / var_x
+                weather_n = len(xs)
+                resid_ss = sum(
+                    (y - (mean_y + weather_beta * (x - mean_x))) ** 2
+                    for x, y in zip(xs, ys)
+                )
+                total_ss = sum((y - mean_y) ** 2 for y in ys)
+                weather_r2 = 1.0 - resid_ss / total_ss if total_ss > 0 else None
+
+        cur_row = con.execute(
+            """
+            SELECT AVG(temp) FROM weather_daily
+            WHERE CAST(ISOYEAR(d) AS INT) = ? AND CAST(WEEK(d) AS INT) = ?
+            """,
+            [proj_year, proj_week],
+        ).fetchone()
+        weather_current_temp = float(cur_row[0]) if cur_row[0] is not None else None
+        weather_historical_temp = hist_temp_by_iso_week.get(proj_week)
+        if (weather_current_temp is not None and
+                weather_historical_temp is not None and weather_beta != 0.0):
+            weather_factor = math.exp(
+                weather_beta * (weather_current_temp - weather_historical_temp)
+            )
     # Projection CI from the variability of trailing weekly ratios. Uses sample
     # std / sqrt(n); falls back to None when we have fewer than 2 observations.
     if trailing_mean is not None and len(trailing_values) >= 2:
@@ -515,8 +604,11 @@ def main() -> None:
 
     projection = None
     if trailing_mean is not None and proj_baseline is not None:
-        proj_raw = proj_baseline * trailing_mean
-        proj_ratio = trailing_mean  # by construction
+        # Apply weather adjustment: if this week is warmer than the historical
+        # avg for this ISO week, nudge the projection up (and vice versa).
+        proj_ratio_pre_weather = trailing_mean
+        proj_ratio = trailing_mean * weather_factor
+        proj_raw = proj_baseline * proj_ratio
         proj_tier_level, proj_tier_name = assign_tier(proj_ratio)
         if proj_tier_level is None:
             proj_tier_level, proj_tier_name = 3, "MASK ON"
@@ -534,6 +626,15 @@ def main() -> None:
             "projected_seasonal_ratio_ci_high": proj_ci_high,
             "projected_tier_level": proj_tier_level,
             "projected_tier_name": proj_tier_name,
+            "weather": {
+                "current_week_temp_c": weather_current_temp,
+                "historical_week_temp_c": weather_historical_temp,
+                "beta": weather_beta,
+                "n_fit": weather_n,
+                "r_squared": weather_r2,
+                "adjustment_factor": weather_factor,
+                "ratio_before_weather": proj_ratio_pre_weather,
+            },
         }
 
     summary = {

@@ -35,6 +35,9 @@ jobs:
       - name: Fetch open data
         run: uv run python scripts/fetch.py
 
+      - name: Fetch Environment Canada weather
+        run: uv run python scripts/fetch_weather.py
+
       - name: Build index
         run: uv run python scripts/build.py
 
