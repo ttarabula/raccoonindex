@@ -392,13 +392,17 @@ def main() -> None:
         """
     )
 
+    # Trim the most-recent partial week so the trendline tail doesn't dip
+    # misleadingly. Anchor to the latest *complete* week.
     city_52 = con.execute(
         """
         SELECT iso_year, iso_week, city_raw, city_ratio
         FROM weekly_city
+        WHERE (iso_year < ? OR (iso_year = ? AND iso_week <= ?))
         ORDER BY iso_year DESC, iso_week DESC
         LIMIT 52
-        """
+        """,
+        [latest_y, latest_y, latest_w],
     ).fetchall()
     city_series = [
         {"iso_year": y, "iso_week": w, "raw_score": r, "ratio": ratio}

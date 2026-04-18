@@ -23,6 +23,12 @@
   "city_series_52w": [
     {
       "iso_year": 2025,
+      "iso_week": 14,
+      "raw_score": 2235.0,
+      "ratio": 1.2211863538571868
+    },
+    {
+      "iso_year": 2025,
       "iso_week": 15,
       "raw_score": 2340.75,
       "ratio": 1.0841197244254037
@@ -326,12 +332,6 @@
       "iso_week": 13,
       "raw_score": 1857.75,
       "ratio": 1.0775030812731095
-    },
-    {
-      "iso_year": 2026,
-      "iso_week": 14,
-      "raw_score": 680.75,
-      "ratio": 0.37195642522965544
     }
   ],
   "projection": {
@@ -351,10 +351,10 @@
       "historical_week_temp_c": 8.45595238095238,
       "current_week_precip_mm": 9.360000000000001,
       "historical_week_precip_mm": 3.2857142857142856,
-      "beta_temp": 0.026565237901564582,
-      "beta_precip": 0.001063916757928617,
+      "beta_temp": 0.02656523790156457,
+      "beta_precip": 0.0010639167579286181,
       "n_fit": 208,
-      "r_squared": 0.16451757750197693,
+      "r_squared": 0.16451757750197726,
       "adjustment_factor": 1.1824107963054251,
       "ratio_before_weather": 1.108871652642743
     }
