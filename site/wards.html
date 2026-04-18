@@ -112,6 +112,17 @@
   .section-h { margin: 1.6rem 0 0.4rem; font-size: 0.85rem;
     text-transform: uppercase; letter-spacing: 0.06em; color: var(--dim); }
 
+  .seasonal { padding: 0 1.5rem 2rem; }
+  .seasonal h2 { margin-bottom: 0.3rem; }
+  .seasonal .sub { color: var(--dim); font-size: 0.85rem; margin: 0 0 1rem; }
+  .seasonal .legend { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.8rem;
+    color: var(--dim); margin-top: 0.8rem; }
+  .seasonal .legend .swatch { display: inline-block; width: 14px; height: 2px;
+    vertical-align: middle; margin-right: 0.4rem; }
+  .seasonal .chart-annotations { position: relative; pointer-events: none; }
+  #seasonal-chart { width: 100%; max-width: 900px; height: 300px; display: block;
+    background: var(--bg-2); border: 1px solid var(--rule); border-radius: 6px; }
+
   .leaderboard { padding: 0 1.5rem 2rem; }
   .leaderboard h2 { margin-bottom: 0.6rem; }
   .leaderboard table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
@@ -165,6 +176,13 @@
     </thead>
     <tbody id="leaderboard-body"></tbody>
   </table>
+</section>
+
+<section class="seasonal">
+  <h2>Seasonal pattern</h2>
+  <p class="sub">Weekly city-wide activity, normalized to each year's mean. Baseline mean shows the typical shape; the current year is overlaid so you can see where 2026 is tracking.</p>
+  <svg id="seasonal-chart" viewBox="0 0 900 300" preserveAspectRatio="none"></svg>
+  <div class="legend" id="seasonal-legend"></div>
 </section>
 
 <section class="methodology">
@@ -234,10 +252,11 @@
     1: "#5b8fa8", 2: "#6fa0b0", 3: "#c8d18a", 4: "#d89b5f", 5: "#d85c3f",
   };
 
-  const [indexData, trendData, wardsGeo] = await Promise.all([
+  const [indexData, trendData, wardsGeo, seasonalData] = await Promise.all([
     fetch("data/index_latest.json").then(r => r.json()),
     fetch("data/ward_trend.json").then(r => r.json()),
     fetch("data/wards.geojson").then(r => r.json()),
+    fetch("data/city_seasonal.json").then(r => r.json()),
   ]);
 
   // Period label
@@ -433,6 +452,116 @@
 
   // Initialize with the top-ranked ward for a non-empty panel
   showWard(indexData.wards[0].ward);
+
+  // Seasonal pattern chart.
+  drawSeasonalChart(seasonalData);
+
+  function drawSeasonalChart(data) {
+    const svg = document.getElementById("seasonal-chart");
+    if (!svg) return;
+    const W = 900, H = 300;
+    const padL = 46, padR = 16, padT = 20, padB = 42;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+    const ns = "http://www.w3.org/2000/svg";
+    svg.innerHTML = "";
+
+    // Y range
+    const yMin = 0.2, yMax = 1.6;
+    const xFromWeek = w => padL + plotW * ((w - 1) / 52);
+    const yFromNorm = v => padT + plotH * (1 - (v - yMin) / (yMax - yMin));
+
+    // Grid + y-axis labels at 0.5, 1.0, 1.5
+    [0.5, 1.0, 1.5].forEach(v => {
+      const y = yFromNorm(v);
+      const line = document.createElementNS(ns, "line");
+      line.setAttribute("x1", padL); line.setAttribute("x2", W - padR);
+      line.setAttribute("y1", y); line.setAttribute("y2", y);
+      line.setAttribute("stroke", v === 1.0 ? "#3a3c40" : "#24262a");
+      line.setAttribute("stroke-width", v === 1.0 ? "1" : "0.6");
+      line.setAttribute("stroke-dasharray", v === 1.0 ? "" : "2 3");
+      svg.appendChild(line);
+      const lbl = document.createElementNS(ns, "text");
+      lbl.setAttribute("x", padL - 8); lbl.setAttribute("y", y + 3);
+      lbl.setAttribute("text-anchor", "end");
+      lbl.setAttribute("fill", "var(--dim)");
+      lbl.setAttribute("font-size", "10");
+      lbl.setAttribute("font-family", "ui-monospace, Menlo, monospace");
+      lbl.textContent = v.toFixed(1) + "×";
+      svg.appendChild(lbl);
+    });
+
+    // Month labels at week starts (approx): Jan=1, Feb=5, Mar=9, Apr=14, May=18,
+    // Jun=22, Jul=27, Aug=31, Sep=35, Oct=40, Nov=44, Dec=48.
+    const monthLabels = [
+      [1, "Jan"], [5, "Feb"], [9, "Mar"], [14, "Apr"], [18, "May"],
+      [22, "Jun"], [27, "Jul"], [31, "Aug"], [35, "Sep"], [40, "Oct"],
+      [44, "Nov"], [48, "Dec"],
+    ];
+    monthLabels.forEach(([w, lbl]) => {
+      const x = xFromWeek(w);
+      const t = document.createElementNS(ns, "text");
+      t.setAttribute("x", x); t.setAttribute("y", H - padB + 16);
+      t.setAttribute("text-anchor", "middle");
+      t.setAttribute("fill", "var(--dim)");
+      t.setAttribute("font-size", "10");
+      t.setAttribute("font-family", "ui-sans-serif, system-ui, sans-serif");
+      t.textContent = lbl;
+      svg.appendChild(t);
+    });
+
+    function drawSeries(points, opts) {
+      if (!points || !points.length) return;
+      const pts = points
+        .map(p => `${xFromWeek(p.iso_week).toFixed(1)},${yFromNorm(p.norm).toFixed(1)}`)
+        .join(" ");
+      const el = document.createElementNS(ns, "polyline");
+      el.setAttribute("points", pts);
+      el.setAttribute("fill", "none");
+      el.setAttribute("stroke", opts.color);
+      el.setAttribute("stroke-width", opts.width);
+      el.setAttribute("stroke-opacity", opts.opacity || 1);
+      if (opts.dash) el.setAttribute("stroke-dasharray", opts.dash);
+      svg.appendChild(el);
+    }
+
+    // Baseline years — faint gray lines each.
+    const baselineYears = data.baseline_years || [];
+    baselineYears.forEach(yr => {
+      const series = data.series_by_year[String(yr)];
+      if (series) drawSeries(series, { color: "#4a4a46", width: 1, opacity: 0.55 });
+    });
+
+    // Baseline mean — thick, bright line (derived).
+    const baselinePoints = Object.entries(data.baseline_mean_by_week)
+      .map(([w, v]) => ({ iso_week: Number(w), norm: Number(v) }))
+      .sort((a, b) => a.iso_week - b.iso_week);
+    drawSeries(baselinePoints, { color: "#c8d18a", width: 2.5 });
+
+    // 2025 — secondary line
+    const y2025 = data.series_by_year["2025"];
+    if (y2025) drawSeries(y2025, { color: "#6fa0b0", width: 1.5 });
+
+    // Current year — accent line
+    const currentYear = String(data.current_year);
+    const yCur = data.series_by_year[currentYear];
+    if (yCur) drawSeries(yCur, { color: "#d85c3f", width: 2.2 });
+
+    // Legend
+    const legendEl = document.getElementById("seasonal-legend");
+    legendEl.innerHTML = "";
+    const legendRows = [
+      { label: `Baseline years (${baselineYears.join(", ")})`, color: "#4a4a46" },
+      { label: "Baseline mean", color: "#c8d18a" },
+      { label: "2025", color: "#6fa0b0" },
+      { label: `${currentYear} (so far)`, color: "#d85c3f" },
+    ];
+    legendRows.forEach(row => {
+      const span = document.createElement("span");
+      span.innerHTML = `<span class="swatch" style="background:${row.color}"></span>${row.label}`;
+      legendEl.appendChild(span);
+    });
+  }
 })();
 </script>
 </body>

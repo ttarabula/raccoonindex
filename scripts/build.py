@@ -408,6 +408,57 @@ def main() -> None:
         {"iso_year": y, "iso_week": w, "raw_score": r, "ratio": ratio}
         for y, w, r, ratio in reversed(city_52)
     ]
+    # Multi-year seasonal pattern — normalized weekly scores per year so the
+    # shape (not the absolute volume drift) is directly comparable.
+    seasonal_years = [2019, 2022, 2023, 2024, 2025, 2026]
+    series_by_year: dict[int, list[dict]] = {}
+    for yr in seasonal_years:
+        if yr == latest_y:
+            rows_q = (
+                "SELECT iso_week, city_raw FROM weekly_city "
+                "WHERE iso_year = ? AND iso_week <= ? ORDER BY iso_week"
+            )
+            params = [yr, latest_w]
+        else:
+            rows_q = (
+                "SELECT iso_week, city_raw FROM weekly_city "
+                "WHERE iso_year = ? ORDER BY iso_week"
+            )
+            params = [yr]
+        rows = con.execute(rows_q, params).fetchall()
+        if not rows:
+            continue
+        raws = [float(r[1]) for r in rows]
+        mean_raw = sum(raws) / len(raws) if raws else 0
+        if mean_raw <= 0:
+            continue
+        series_by_year[yr] = [
+            {"iso_week": int(r[0]), "raw": float(r[1]), "norm": float(r[1]) / mean_raw}
+            for r in rows
+        ]
+
+    baseline_mean_by_week: dict[int, float] = {}
+    for iso_w in range(1, 54):
+        vals = []
+        for yr in BASELINE_YEARS:
+            ser = series_by_year.get(yr, [])
+            for p in ser:
+                if p["iso_week"] == iso_w:
+                    vals.append(p["norm"])
+        if vals:
+            baseline_mean_by_week[iso_w] = sum(vals) / len(vals)
+
+    seasonal_payload = {
+        "baseline_years": list(BASELINE_YEARS),
+        "current_year": latest_y,
+        "series_by_year": {str(y): s for y, s in series_by_year.items()},
+        "baseline_mean_by_week": {str(k): v for k, v in baseline_mean_by_week.items()},
+    }
+    (PROC / "city_seasonal.json").write_text(
+        json.dumps(seasonal_payload, indent=2, default=_json_default)
+    )
+    print(f"Wrote {PROC / 'city_seasonal.json'} — {len(series_by_year)} years")
+
     city_now = con.execute(
         "SELECT city_raw, city_ratio FROM weekly_city WHERE iso_year = ? AND iso_week = ?",
         [latest_y, latest_w],

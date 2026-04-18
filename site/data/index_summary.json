@@ -351,10 +351,10 @@
       "historical_week_temp_c": 8.45595238095238,
       "current_week_precip_mm": 9.360000000000001,
       "historical_week_precip_mm": 3.2857142857142856,
-      "beta_temp": 0.02656523790156457,
-      "beta_precip": 0.0010639167579286181,
+      "beta_temp": 0.02656523790156459,
+      "beta_precip": 0.0010639167579286199,
       "n_fit": 208,
-      "r_squared": 0.16451757750197726,
+      "r_squared": 0.16451757750197715,
       "adjustment_factor": 1.1824107963054251,
       "ratio_before_weather": 1.108871652642743
     }
