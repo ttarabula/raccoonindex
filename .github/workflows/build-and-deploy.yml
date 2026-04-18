@@ -1,0 +1,61 @@
+name: Build and deploy
+
+on:
+  schedule:
+    # Mondays at 10:00 UTC (5–6 AM Toronto depending on DST) — the city's 311
+    # data is typically settled for the prior week by then.
+    - cron: "0 10 * * 1"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Fetch open data
+        run: uv run python scripts/fetch.py
+
+      - name: Build index
+        run: uv run python scripts/build.py
+
+      - name: Export site data
+        run: uv run python scripts/export_site.py
+
+      - name: Regenerate OG image
+        run: uv run python scripts/make_og_image.py
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

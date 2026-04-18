@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Toronto Raccoon Activity Index (Unofficial)</title>
+<meta name="description" content="Unofficial parody dashboard — a Toronto Raccoon Activity Index built from real 311 service-request data. Not affiliated with the City of Toronto." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Toronto Raccoon Activity Index" />
+<meta property="og:title" content="Toronto Raccoon Activity Index (Unofficial)" />
+<meta property="og:description" content="A parody civic advisory system for Toronto's unofficial mascot. Built from real 311 data. Not affiliated with the City of Toronto." />
+<meta property="og:url" content="https://raccoonindex.ca/" />
+<meta property="og:image" content="https://raccoonindex.ca/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Toronto Raccoon Activity Index (Unofficial)" />
+<meta name="twitter:description" content="A parody civic advisory system for Toronto's unofficial mascot. Built from real 311 data." />
+<meta name="twitter:image" content="https://raccoonindex.ca/og-image.png" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text x='0' y='14' font-size='14'>🦝</text></svg>" />
+<style>
+  :root {
+    --bg: #0e1013;
+    --bg-2: #16181c;
+    --fg: #e8e6df;
+    --dim: #8a8680;
+    --rule: #2a2c30;
+    --accent: #c8d18a;
+    --t1: #5b8fa8;
+    --t2: #6fa0b0;
+    --t3: #c8d18a;
+    --t4: #d89b5f;
+    --t5: #d85c3f;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: "ui-serif", Georgia, "Iowan Old Style", serif; }
+  body { min-height: 100vh; }
+  a { color: var(--accent); }
+  h1, h2, h3 { font-family: "ui-sans-serif", system-ui, sans-serif;
+    font-weight: 600; letter-spacing: -0.01em; }
+
+  header {
+    border-bottom: 1px solid var(--rule);
+    padding: 1.5rem 1.5rem 1rem;
+  }
+  header .kicker { color: var(--dim); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; }
+  header h1 { margin: 0.3rem 0 0; font-size: 1.35rem; font-weight: 500; }
+
+  main { padding: 2rem 1.5rem; }
+
+  .hero {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 2rem 0 3rem;
+  }
+
+  .mascot { width: 200px; height: auto; display: block; margin: 0 auto 1rem;
+    transition: all 0.2s; }
+  @media (max-width: 640px) { .mascot { width: 150px; } }
+  .mascot .mask { transition: fill 0.25s; }
+
+  .level-badge {
+    display: inline-flex; align-items: baseline; gap: 0.9rem;
+    font-family: "ui-sans-serif", system-ui, sans-serif;
+    margin-bottom: 1rem;
+  }
+  .level-badge .lvl-k { font-size: 0.8rem; color: var(--dim);
+    text-transform: uppercase; letter-spacing: 0.12em; }
+  .level-badge .lvl-n {
+    font-size: 5rem; font-weight: 700; line-height: 1;
+    font-family: "ui-monospace", SFMono-Regular, Menlo, monospace;
+  }
+
+  .tier-name {
+    font-family: "ui-sans-serif", system-ui, sans-serif;
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0.5rem 0 1.2rem;
+    line-height: 0.95;
+  }
+
+  .ratio-line { font-size: 1.2rem; color: var(--dim); }
+  .ratio-line .big { color: var(--fg); font-family: "ui-monospace", Menlo, monospace;
+    font-weight: 700; font-size: 1.5rem; }
+
+  .status-line {
+    color: var(--dim); font-size: 1.05rem;
+    max-width: 540px; margin: 1.3rem auto 0;
+    line-height: 1.5;
+  }
+
+  .period-stamp {
+    display: inline-block; margin-top: 1.6rem;
+    font-family: "ui-monospace", Menlo, monospace; font-size: 0.85rem;
+    color: var(--dim);
+    border: 1px solid var(--rule); padding: 0.25rem 0.6rem; border-radius: 3px;
+  }
+
+  .callouts {
+    max-width: 900px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    padding-bottom: 2rem;
+  }
+  @media (max-width: 640px) { .callouts { grid-template-columns: 1fr; } }
+  .callout {
+    background: var(--bg-2); border: 1px solid var(--rule);
+    padding: 1.1rem 1.2rem; border-radius: 6px;
+  }
+  .callout .k {
+    color: var(--dim); font-size: 0.75rem; text-transform: uppercase;
+    letter-spacing: 0.1em; margin-bottom: 0.4rem;
+  }
+  .callout .v { font-size: 1.3rem; font-weight: 600;
+    font-family: "ui-sans-serif", system-ui, sans-serif; }
+  .callout .sub { color: var(--dim); font-size: 0.9rem; margin-top: 0.3rem;
+    font-family: "ui-serif", serif; }
+
+  .trend {
+    max-width: 900px; margin: 2rem auto 0;
+    padding: 1.3rem 1.4rem; background: var(--bg-2);
+    border: 1px solid var(--rule); border-radius: 6px;
+  }
+  .trend-h { display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 0.5rem; }
+  .trend-h .label { color: var(--dim); font-size: 0.8rem;
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .trend-h .note { color: var(--dim); font-size: 0.82rem; }
+  #trend-svg { width: 100%; height: 120px; display: block; }
+
+  .drill {
+    max-width: 900px; margin: 2.5rem auto 1rem;
+    text-align: center;
+  }
+  .drill a {
+    display: inline-block; padding: 0.8rem 1.4rem;
+    background: var(--bg-2); border: 1px solid var(--rule); border-radius: 6px;
+    color: var(--fg); text-decoration: none; font-family: "ui-sans-serif", system-ui, sans-serif;
+    font-size: 0.95rem;
+  }
+  .drill a:hover { border-color: var(--accent); }
+  .drill .chev { color: var(--accent); margin-left: 0.35rem; }
+
+  .scale {
+    max-width: 900px; margin: 3rem auto 0;
+    font-size: 0.85rem; color: var(--dim);
+  }
+  .scale h3 { color: var(--fg); font-size: 0.95rem; margin: 0 0 0.6rem;
+    font-weight: 500; }
+  .scale table { border-collapse: collapse; width: 100%; }
+  .scale td { padding: 0.35rem 0.6rem; border-bottom: 1px dotted var(--rule); }
+  .scale .tier-cell { width: 140px; font-family: "ui-sans-serif", system-ui, sans-serif;
+    font-weight: 700; letter-spacing: 0.02em; }
+  .scale .tier-num { display: inline-block; width: 1.5rem; color: var(--dim);
+    font-family: Menlo, monospace; font-weight: 400; }
+
+  footer { padding: 2rem 1.5rem 3rem; color: var(--dim); font-size: 0.82rem;
+    border-top: 1px solid var(--rule); margin-top: 3rem; line-height: 1.55;
+    max-width: 900px; margin-left: auto; margin-right: auto; }
+  footer p { margin: 0.3rem 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">Toronto Raccoon Activity Index <span style="color:var(--t5);letter-spacing:0.15em">· Unofficial</span></div>
+  <h1>A parody civic advisory system for the city's unofficial mascot.</h1>
+</header>
+
+<main>
+
+  <section class="hero" id="hero">
+    <svg class="mascot" id="mascot" viewBox="0 0 240 240" aria-label="Toronto raccoon civic crest">
+      <!-- outer medallion -->
+      <circle cx="120" cy="120" r="112" fill="#16181c" stroke="#4a4a46" stroke-width="1.5"/>
+      <circle cx="120" cy="120" r="104" fill="none" stroke="#2a2c30" stroke-width="0.5"/>
+
+      <!-- compass dots at cardinal points -->
+      <circle cx="120" cy="16" r="2.5" fill="#4a4a46"/>
+      <circle cx="224" cy="120" r="2.5" fill="#4a4a46"/>
+      <circle cx="120" cy="224" r="2.5" fill="#4a4a46"/>
+      <circle cx="16" cy="120" r="2.5" fill="#4a4a46"/>
+
+      <!-- diagonal tick marks -->
+      <g stroke="#4a4a46" stroke-width="1.5" stroke-linecap="round">
+        <line x1="51" y1="51" x2="57" y2="57"/>
+        <line x1="189" y1="51" x2="183" y2="57"/>
+        <line x1="51" y1="189" x2="57" y2="183"/>
+        <line x1="189" y1="189" x2="183" y2="183"/>
+      </g>
+
+      <!-- ears -->
+      <path d="M 70,88 L 82,30 L 110,82 Z" fill="#4a4a46"/>
+      <path d="M 170,88 L 158,30 L 130,82 Z" fill="#4a4a46"/>
+      <path d="M 86,78 L 92,46 L 102,76 Z" fill="#d6d2c6"/>
+      <path d="M 154,78 L 148,46 L 138,76 Z" fill="#d6d2c6"/>
+
+      <!-- face shield -->
+      <path d="M 68,98 Q 68,68 120,64 Q 172,68 172,98
+               Q 178,142 158,178 Q 138,200 120,200
+               Q 102,200 82,178 Q 62,142 68,98 Z" fill="#8f8d83"/>
+
+      <!-- cheek patches -->
+      <path d="M 68,124 Q 64,158 86,176 Q 92,162 90,134 Q 80,126 68,124 Z" fill="#e0dccf"/>
+      <path d="M 172,124 Q 176,158 154,176 Q 148,162 150,134 Q 160,126 172,124 Z" fill="#e0dccf"/>
+
+      <!-- continuous white stripe: forehead → between eyes → down to snout -->
+      <path d="M 106,66 Q 120,62 134,66
+               C 134,88 130,124 124,154
+               L 116,154
+               C 110,124 106,88 106,66 Z" fill="#ebe7da"/>
+
+      <!-- pale snout area -->
+      <ellipse cx="120" cy="168" rx="28" ry="20" fill="#f1eddf"/>
+
+      <!-- BANDIT MASK — tier-colored via JS -->
+      <path class="mask" id="mask"
+            d="M 60,100 Q 84,86 108,98 Q 114,104 120,104 Q 126,104 132,98 Q 156,86 180,100
+               Q 182,126 162,138 Q 140,146 124,134 Q 120,130 116,134 Q 100,146 78,138 Q 58,126 60,100 Z"
+            fill="#0e1013"/>
+
+      <!-- eyes -->
+      <ellipse cx="92" cy="116" rx="6.5" ry="7.5" fill="#f5f3e8"/>
+      <ellipse cx="148" cy="116" rx="6.5" ry="7.5" fill="#f5f3e8"/>
+      <ellipse cx="92" cy="118" rx="3.2" ry="3.6" fill="#0e1013"/>
+      <ellipse cx="148" cy="118" rx="3.2" ry="3.6" fill="#0e1013"/>
+      <circle cx="94" cy="114" r="1.2" fill="#f5f3e8"/>
+      <circle cx="150" cy="114" r="1.2" fill="#f5f3e8"/>
+
+      <!-- nose -->
+      <path d="M 110,152 Q 120,146 130,152 Q 132,164 120,170 Q 108,164 110,152 Z" fill="#0e1013"/>
+
+      <!-- mouth -->
+      <path d="M 120,170 L 120,184 M 120,184 Q 112,188 105,186 M 120,184 Q 128,188 135,186"
+            stroke="#0e1013" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="level-badge">
+      <span class="lvl-k">Level</span>
+      <span class="lvl-n" id="level-num">—</span>
+    </div>
+    <div class="tier-name" id="tier-name" style="color: var(--t3)">LOADING</div>
+    <div class="ratio-line">Activity is <span class="big" id="ratio">—</span> the seasonal baseline.</div>
+    <div class="status-line" id="status-line">Loading weekly readings…</div>
+    <div class="period-stamp" id="period-stamp">—</div>
+  </section>
+
+  <section class="callouts">
+    <div class="callout" id="panda">
+      <div class="k">Trash Panda of the Week</div>
+      <div class="v">—</div>
+      <div class="sub">—</div>
+    </div>
+    <div class="callout" id="mover">
+      <div class="k">Biggest Mover</div>
+      <div class="v">—</div>
+      <div class="sub">—</div>
+    </div>
+  </section>
+
+  <section class="trend">
+    <div class="trend-h">
+      <div class="label">City-wide index, last 52 weeks</div>
+      <div class="note">Grey line = seasonal baseline (1.00×)</div>
+    </div>
+    <svg id="trend-svg" viewBox="0 0 900 120" preserveAspectRatio="none"></svg>
+  </section>
+
+  <section class="drill">
+    <a href="./wards.html">See ward-by-ward map <span class="chev">→</span></a>
+  </section>
+
+  <section class="scale">
+    <h3>Alert scale</h3>
+    <table>
+      <tr><td class="tier-cell" style="color: var(--t1)"><span class="tier-num">1</span>DEN DORMANCY</td><td>Below 0.60× seasonal</td><td>The raccoons are asleep in your attic.</td></tr>
+      <tr><td class="tier-cell" style="color: var(--t2)"><span class="tier-num">2</span>BIN ADVISORY</td><td>0.60–0.89×</td><td>A raccoon has made eye contact with a patio door.</td></tr>
+      <tr><td class="tier-cell" style="color: var(--t3)"><span class="tier-num">3</span>MASK ON</td><td>0.90–1.09×</td><td>Baseline bandit density. Cats are uneasy.</td></tr>
+      <tr><td class="tier-cell" style="color: var(--t4)"><span class="tier-num">4</span>BIN BREACH</td><td>1.10–1.39×</td><td>Coordinated lid defeat. Raccoons operating in teams of two or more.</td></tr>
+      <tr><td class="tier-cell" style="color: var(--t5)"><span class="tier-num">5</span>PANDAMONIUM</td><td>1.40× and up</td><td>Do not make eye contact. The green bin is not yours now.</td></tr>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  <p>
+    Built on <a href="https://open.toronto.ca/">City of Toronto open data</a>.
+    Inspired by the retired <a href="https://open.toronto.ca/dataset/toronto-raccoon-activity-index/">Toronto Raccoon Activity Index</a>
+    (April 1 joke, since scrubbed; we are doing the bit now).
+  </p>
+  <p>
+    The index is a weighted composite of 311 service requests: wildlife cadaver and injury calls,
+    bin-lid repairs, missed garbage pickup, illegal dumping, and overflowing litter bins —
+    i.e., we are inferring the bandit from the ransom note.
+    Methodology and per-ward data on the <a href="./wards.html">ward page</a>.
+  </p>
+  <p>
+    Not affiliated with the City of Toronto. No raccoons were consulted.
+  </p>
+</footer>
+
+<script>
+(async function() {
+  const TIER_COLORS = {
+    1: "var(--t1)", 2: "var(--t2)", 3: "var(--t3)", 4: "var(--t4)", 5: "var(--t5)",
+  };
+
+  // Ward name lookup from the shared geojson
+  const [summary, wardsGeo] = await Promise.all([
+    fetch("data/index_summary.json").then(r => r.json()),
+    fetch("data/wards.geojson").then(r => r.json()),
+  ]);
+  const wardName = code => {
+    const f = wardsGeo.features.find(f => f.properties.ward === code);
+    return f ? f.properties.name : code;
+  };
+
+  // Hero
+  document.getElementById("level-num").textContent = summary.tier_level;
+  const tierEl = document.getElementById("tier-name");
+  tierEl.textContent = summary.tier_name;
+  const tierColor = TIER_COLORS[summary.tier_level] || "var(--accent)";
+  tierEl.style.color = tierColor;
+  // Tint the mascot's bandit mask with the current tier color.
+  // Use inline style so CSS var(--tN) resolves reliably on all browsers.
+  document.getElementById("mask").style.fill = tierColor;
+
+  const ratio = summary.city_seasonal_ratio;
+  const ratioEl = document.getElementById("ratio");
+  ratioEl.textContent = ratio !== null ? ratio.toFixed(2) + "×" : "—";
+  ratioEl.style.color = TIER_COLORS[summary.tier_level];
+
+  const elevated = summary.wards_elevated, total = summary.wards_total;
+  const verb = elevated >= total * 0.7 ? "across"
+             : elevated >= total * 0.4 ? "in"
+             : "in just";
+  document.getElementById("status-line").textContent =
+    `Activity is elevated ${verb} ${elevated} of ${total} wards this week.`;
+
+  document.getElementById("period-stamp").textContent =
+    `Week of ${formatIsoWeekStart(summary.iso_year, summary.iso_week)}`;
+
+  function formatIsoWeekStart(isoYear, isoWeek) {
+    // ISO 8601: week 1 contains Jan 4. Monday of that week is the anchor.
+    const jan4 = new Date(Date.UTC(isoYear, 0, 4));
+    const jan4Day = jan4.getUTCDay() || 7;
+    const week1Mon = new Date(jan4);
+    week1Mon.setUTCDate(jan4.getUTCDate() - jan4Day + 1);
+    const mon = new Date(week1Mon);
+    mon.setUTCDate(week1Mon.getUTCDate() + (isoWeek - 1) * 7);
+    return mon.toLocaleDateString("en-CA", {
+      month: "short", day: "numeric", year: "numeric", timeZone: "UTC",
+    });
+  }
+
+  // Trash Panda callout
+  if (summary.trash_panda) {
+    const p = summary.trash_panda;
+    const pandaEl = document.getElementById("panda");
+    pandaEl.querySelector(".v").textContent = wardName(p.ward);
+    pandaEl.querySelector(".sub").textContent =
+      `${p.seasonal_ratio.toFixed(2)}× its own seasonal norm — the city's most raccoon ward this week.`;
+  }
+
+  // Biggest mover
+  if (summary.biggest_mover) {
+    const m = summary.biggest_mover;
+    const moverEl = document.getElementById("mover");
+    moverEl.querySelector(".v").textContent = wardName(m.ward);
+    const delta = m.delta >= 0 ? `+${m.delta.toFixed(1)}` : m.delta.toFixed(1);
+    moverEl.querySelector(".sub").textContent =
+      `Index ${delta} vs. last week (${m.prev_raw_score.toFixed(1)} → ${m.raw_score.toFixed(1)}).`;
+  }
+
+  // Trend sparkline — city raw score, 52 weeks.
+  drawTrend(summary.city_series_52w);
+
+  function drawTrend(series) {
+    const svg = document.getElementById("trend-svg");
+    const W = 900, H = 120, padX = 8, padY = 12;
+    svg.innerHTML = "";
+
+    if (!series.length) return;
+
+    const raws = series.map(p => Number(p.raw_score));
+    const ratios = series.map(p => p.ratio !== null ? Number(p.ratio) : null);
+    const mn = Math.min(...raws), mx = Math.max(...raws);
+    const span = mx - mn || 1;
+    const n = series.length;
+    const xs = i => padX + (W - padX * 2) * (i / Math.max(1, n - 1));
+    const ys = v => H - padY - (H - padY * 2) * ((v - mn) / span);
+
+    // Baseline (ratio = 1.0) reference line — compute mean of (raw / ratio) where ratio exists
+    const baselines = series
+      .filter(p => p.ratio && Number(p.ratio) > 0)
+      .map(p => Number(p.raw_score) / Number(p.ratio));
+    let baseY = null;
+    if (baselines.length) {
+      const avgBaseline = baselines.reduce((a, b) => a + b, 0) / baselines.length;
+      baseY = ys(avgBaseline);
+    }
+
+    const ns = "http://www.w3.org/2000/svg";
+    if (baseY !== null) {
+      const l = document.createElementNS(ns, "line");
+      l.setAttribute("x1", padX); l.setAttribute("x2", W - padX);
+      l.setAttribute("y1", baseY); l.setAttribute("y2", baseY);
+      l.setAttribute("stroke", "var(--rule)"); l.setAttribute("stroke-dasharray", "3 3");
+      l.setAttribute("stroke-width", "1");
+      svg.appendChild(l);
+    }
+
+    const pts = raws.map((r, i) => `${xs(i).toFixed(1)},${ys(r).toFixed(1)}`).join(" ");
+    const poly = document.createElementNS(ns, "polyline");
+    poly.setAttribute("points", pts); poly.setAttribute("fill", "none");
+    poly.setAttribute("stroke", "var(--accent)"); poly.setAttribute("stroke-width", "1.5");
+    svg.appendChild(poly);
+
+    // Dot + value for latest point
+    const lastX = xs(n - 1), lastY = ys(raws[n - 1]);
+    const dot = document.createElementNS(ns, "circle");
+    dot.setAttribute("cx", lastX); dot.setAttribute("cy", lastY);
+    dot.setAttribute("r", "4");
+    dot.setAttribute("fill", TIER_COLORS[summary.tier_level]);
+    svg.appendChild(dot);
+  }
+})();
+</script>
+</body>
+</html>

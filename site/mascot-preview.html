@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mascot preview — Toronto Raccoon Activity Index</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text x='0' y='14' font-size='14'>🦝</text></svg>" />
+<style>
+  :root {
+    --bg: #0e1013;
+    --bg-2: #16181c;
+    --fg: #e8e6df;
+    --dim: #8a8680;
+    --rule: #2a2c30;
+    --accent: #c8d18a;
+    --tier: #d89b5f; /* matches current TRASH WARNING tier */
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: "ui-serif", Georgia, serif; }
+  h1, h2, h3 { font-family: "ui-sans-serif", system-ui, sans-serif; font-weight: 600; }
+  a { color: var(--accent); }
+
+  header { padding: 1.5rem; border-bottom: 1px solid var(--rule); }
+  header a { color: var(--dim); font-size: 0.85rem; text-decoration: none; }
+  header h1 { margin: 0.3rem 0 0; font-size: 1.3rem; }
+  header .sub { color: var(--dim); margin-top: 0.3rem; font-size: 0.95rem; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;
+    padding: 2.5rem 1.5rem;
+    max-width: 1200px; margin: 0 auto;
+  }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; max-width: 480px; } }
+
+  .card {
+    background: var(--bg-2); border: 1px solid var(--rule); border-radius: 8px;
+    padding: 1.5rem 1.2rem 1.3rem; text-align: center;
+  }
+  .card svg { width: 200px; height: 200px; display: block; margin: 0 auto 0.8rem; }
+  .card .mask { transition: fill 0.25s; }
+  .card h2 { margin: 0.2rem 0; font-size: 1rem; font-family: "ui-sans-serif", system-ui, sans-serif;
+    letter-spacing: 0.04em; text-transform: uppercase; }
+  .card .label { color: var(--dim); font-size: 0.8rem; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-top: 0.2rem; }
+  .card .desc { color: var(--dim); font-size: 0.88rem; line-height: 1.5;
+    margin: 0.6rem 0 0; }
+
+  footer { padding: 1.5rem; color: var(--dim); font-size: 0.85rem; border-top: 1px solid var(--rule); }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="./">← back to alert</a>
+  <h1>Mascot preview</h1>
+  <div class="sub">Three directions. Masks tinted in the current TRASH WARNING tier color for comparison.</div>
+</header>
+
+<div class="grid">
+
+  <!-- OPTION A — Refined Classic -->
+  <div class="card">
+    <svg viewBox="0 0 240 240" aria-label="Raccoon mascot option A">
+      <!-- tail -->
+      <path d="M 210,140 Q 236,100 226,50 Q 214,20 190,26 Q 208,50 210,90 Q 208,122 200,138 Z" fill="#4a4a46"/>
+      <path d="M 212,60 Q 222,56 220,40 L 208,42 Q 210,52 212,60 Z" fill="#9b9b91"/>
+      <path d="M 212,100 Q 224,94 220,80 L 208,82 Q 208,92 212,100 Z" fill="#9b9b91"/>
+      <!-- ears -->
+      <path d="M 56,84 L 70,20 L 104,76 Z" fill="#4a4a46"/>
+      <path d="M 184,84 L 170,20 L 136,76 Z" fill="#4a4a46"/>
+      <path d="M 74,72 L 80,36 L 94,70 Z" fill="#d6d2c6"/>
+      <path d="M 166,72 L 160,36 L 146,70 Z" fill="#d6d2c6"/>
+      <!-- face -->
+      <path d="M 58,94 Q 58,62 120,58 Q 182,62 182,94
+               Q 188,144 164,184 Q 140,216 120,216
+               Q 100,216 76,184 Q 52,144 58,94 Z" fill="#8f8d83"/>
+      <!-- cheek patches -->
+      <path d="M 60,118 Q 56,158 82,178 Q 90,162 88,130 Q 76,120 60,118 Z" fill="#e0dccf"/>
+      <path d="M 180,118 Q 184,158 158,178 Q 150,162 152,130 Q 164,120 180,118 Z" fill="#e0dccf"/>
+      <!-- continuous stripe -->
+      <path d="M 102,56 Q 120,52 138,56
+               C 138,80 132,122 124,150
+               L 116,150
+               C 108,122 102,80 102,56 Z" fill="#ebe7da"/>
+      <!-- snout -->
+      <ellipse cx="120" cy="172" rx="32" ry="22" fill="#f1eddf"/>
+      <!-- mask -->
+      <path class="mask" style="fill: var(--tier)"
+            d="M 50,96 Q 80,80 106,94 Q 112,100 120,100 Q 128,100 134,94 Q 160,80 190,96
+               Q 192,124 170,136 Q 146,144 126,132 Q 120,128 114,132 Q 94,144 70,136 Q 48,124 50,96 Z"/>
+      <!-- eyes -->
+      <ellipse cx="90" cy="112" rx="7" ry="8" fill="#f5f3e8"/>
+      <ellipse cx="150" cy="112" rx="7" ry="8" fill="#f5f3e8"/>
+      <ellipse cx="90" cy="114" rx="3.5" ry="4" fill="#0e1013"/>
+      <ellipse cx="150" cy="114" rx="3.5" ry="4" fill="#0e1013"/>
+      <circle cx="92" cy="110" r="1.3" fill="#f5f3e8"/>
+      <circle cx="152" cy="110" r="1.3" fill="#f5f3e8"/>
+      <!-- nose -->
+      <path d="M 110,154 Q 120,148 130,154 Q 132,166 120,172 Q 108,166 110,154 Z" fill="#0e1013"/>
+      <!-- mouth -->
+      <path d="M 120,172 L 120,188 M 120,188 Q 110,194 101,190 M 120,188 Q 130,194 139,190"
+            stroke="#0e1013" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- whiskers -->
+      <g stroke="#0e1013" stroke-width="1" stroke-linecap="round" opacity="0.5">
+        <line x1="64" y1="172" x2="92" y2="174"/>
+        <line x1="176" y1="172" x2="148" y2="174"/>
+      </g>
+    </svg>
+    <div class="label">Option A</div>
+    <h2>Refined Classic</h2>
+    <p class="desc">Shield-face front portrait with striped tail and whiskers. Warmer, storybook-ish.</p>
+  </div>
+
+  <!-- OPTION B — Civic Crest -->
+  <div class="card">
+    <svg viewBox="0 0 240 240" aria-label="Raccoon mascot option B">
+      <!-- outer medallion ring -->
+      <circle cx="120" cy="120" r="112" fill="#16181c" stroke="#4a4a46" stroke-width="1.5"/>
+      <circle cx="120" cy="120" r="104" fill="none" stroke="#2a2c30" stroke-width="0.5"/>
+      <!-- cardinal dots -->
+      <circle cx="120" cy="16" r="2.5" fill="#4a4a46"/>
+      <circle cx="224" cy="120" r="2.5" fill="#4a4a46"/>
+      <circle cx="120" cy="224" r="2.5" fill="#4a4a46"/>
+      <circle cx="16" cy="120" r="2.5" fill="#4a4a46"/>
+      <!-- diagonal tick marks -->
+      <g stroke="#4a4a46" stroke-width="1.5" stroke-linecap="round">
+        <line x1="51" y1="51" x2="57" y2="57"/>
+        <line x1="189" y1="51" x2="183" y2="57"/>
+        <line x1="51" y1="189" x2="57" y2="183"/>
+        <line x1="189" y1="189" x2="183" y2="183"/>
+      </g>
+      <!-- ears -->
+      <path d="M 72,94 L 84,48 L 108,88 Z" fill="#4a4a46"/>
+      <path d="M 168,94 L 156,48 L 132,88 Z" fill="#4a4a46"/>
+      <path d="M 86,84 L 92,60 L 100,82 Z" fill="#d6d2c6"/>
+      <path d="M 154,84 L 148,60 L 140,82 Z" fill="#d6d2c6"/>
+      <!-- face -->
+      <path d="M 76,100 Q 76,76 120,72 Q 164,76 164,100
+               Q 168,138 150,170 Q 134,194 120,194
+               Q 106,194 90,170 Q 72,138 76,100 Z" fill="#8f8d83"/>
+      <!-- stripe -->
+      <path d="M 110,74 Q 120,70 130,74
+               C 130,92 126,124 122,150
+               L 118,150
+               C 114,124 110,92 110,74 Z" fill="#ebe7da"/>
+      <!-- snout -->
+      <ellipse cx="120" cy="162" rx="22" ry="16" fill="#f1eddf"/>
+      <!-- mask -->
+      <path class="mask" style="fill: var(--tier)"
+            d="M 72,106 Q 94,94 112,104 Q 116,108 120,108 Q 124,108 128,104 Q 146,94 168,106
+               Q 170,126 154,134 Q 136,140 122,130 Q 120,128 118,130 Q 104,140 86,134 Q 70,126 72,106 Z"/>
+      <!-- eyes -->
+      <ellipse cx="100" cy="120" rx="5" ry="6" fill="#f5f3e8"/>
+      <ellipse cx="140" cy="120" rx="5" ry="6" fill="#f5f3e8"/>
+      <ellipse cx="100" cy="122" rx="2.5" ry="3" fill="#0e1013"/>
+      <ellipse cx="140" cy="122" rx="2.5" ry="3" fill="#0e1013"/>
+      <!-- nose -->
+      <path d="M 112,150 Q 120,146 128,150 Q 130,160 120,164 Q 110,160 112,150 Z" fill="#0e1013"/>
+      <!-- mouth -->
+      <path d="M 120,164 L 120,178 M 120,178 Q 114,182 108,180 M 120,178 Q 126,182 132,180"
+            stroke="#0e1013" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="label">Option B</div>
+    <h2>Civic Crest</h2>
+    <p class="desc">Raccoon head inside a dark medallion with compass dots. Leans hard into the fake-official-alert tone.</p>
+  </div>
+
+  <!-- OPTION C — Bin Bandit -->
+  <div class="card">
+    <svg viewBox="0 0 240 240" aria-label="Raccoon mascot option C">
+      <!-- bin body (trapezoidal green cart) -->
+      <path d="M 52,148 L 188,148 L 180,228 L 60,228 Z" fill="#2d7d46"/>
+      <!-- ridges -->
+      <g stroke="#1e5e33" stroke-width="1.5" fill="none">
+        <line x1="55" y1="168" x2="185" y2="168"/>
+        <line x1="57" y1="188" x2="183" y2="188"/>
+        <line x1="59" y1="208" x2="181" y2="208"/>
+      </g>
+      <!-- bin lid (open, back) -->
+      <path d="M 44,140 L 50,108 L 190,108 L 196,140 Z" fill="#1e5e33"/>
+      <path d="M 44,140 L 196,140 L 190,148 L 50,148 Z" fill="#0f3d1d"/>
+      <!-- paws gripping rim -->
+      <ellipse cx="78" cy="144" rx="11" ry="5" fill="#4a4a46"/>
+      <ellipse cx="162" cy="144" rx="11" ry="5" fill="#4a4a46"/>
+      <g fill="#2a2c30">
+        <circle cx="71" cy="141" r="1.8"/><circle cx="77" cy="139" r="1.8"/><circle cx="85" cy="141" r="1.8"/>
+        <circle cx="155" cy="141" r="1.8"/><circle cx="163" cy="139" r="1.8"/><circle cx="169" cy="141" r="1.8"/>
+      </g>
+      <!-- ears -->
+      <path d="M 82,66 L 92,22 L 114,62 Z" fill="#4a4a46"/>
+      <path d="M 158,66 L 148,22 L 126,62 Z" fill="#4a4a46"/>
+      <path d="M 94,58 L 98,38 L 108,58 Z" fill="#d6d2c6"/>
+      <path d="M 146,58 L 142,38 L 132,58 Z" fill="#d6d2c6"/>
+      <!-- face (emerging above bin rim) -->
+      <path d="M 86,74 Q 86,54 120,50 Q 154,54 154,74
+               Q 156,110 142,140 Q 130,148 120,148
+               Q 110,148 98,140 Q 84,110 86,74 Z" fill="#8f8d83"/>
+      <!-- cheek patches -->
+      <path d="M 88,98 Q 86,124 100,138 Q 104,128 102,108 Q 96,100 88,98 Z" fill="#e0dccf"/>
+      <path d="M 152,98 Q 154,124 140,138 Q 136,128 138,108 Q 144,100 152,98 Z" fill="#e0dccf"/>
+      <!-- stripe -->
+      <path d="M 112,52 Q 120,50 128,52
+               C 128,70 126,104 122,130
+               L 118,130
+               C 114,104 112,70 112,52 Z" fill="#ebe7da"/>
+      <!-- snout -->
+      <ellipse cx="120" cy="140" rx="18" ry="12" fill="#f1eddf"/>
+      <!-- mask -->
+      <path class="mask" style="fill: var(--tier)"
+            d="M 82,80 Q 104,70 114,80 Q 118,84 120,84 Q 122,84 126,80 Q 136,70 158,80
+               Q 160,100 142,108 Q 126,112 120,104 Q 118,102 120,102 Q 114,112 98,108 Q 80,100 82,80 Z"/>
+      <!-- eyes -->
+      <ellipse cx="100" cy="92" rx="5" ry="6" fill="#f5f3e8"/>
+      <ellipse cx="140" cy="92" rx="5" ry="6" fill="#f5f3e8"/>
+      <ellipse cx="100" cy="94" rx="2.5" ry="3" fill="#0e1013"/>
+      <ellipse cx="140" cy="94" rx="2.5" ry="3" fill="#0e1013"/>
+      <circle cx="102" cy="90" r="1" fill="#f5f3e8"/>
+      <circle cx="142" cy="90" r="1" fill="#f5f3e8"/>
+      <!-- nose -->
+      <path d="M 113,128 Q 120,124 127,128 Q 128,136 120,140 Q 112,136 113,128 Z" fill="#0e1013"/>
+    </svg>
+    <div class="label">Option C</div>
+    <h2>Bin Bandit</h2>
+    <p class="desc">Raccoon peeking out of a Toronto green organics cart. Most specifically local and most narrative.</p>
+  </div>
+
+</div>
+
+<footer>
+  Current site mascot is Option A. Pick a favourite and tell Claude which letter.
+</footer>
+
+</body>
+</html>
