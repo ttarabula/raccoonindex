@@ -37,9 +37,22 @@ def fetch_month(year: int, month: int, out: Path, force: bool = False) -> None:
         "Day": 1,
         "timeframe": 2,
     }
-    r = requests.get(URL, params=params, timeout=60)
-    r.raise_for_status()
-    out.write_bytes(r.content)
+    # ECCC's server occasionally times out or rate-limits CI runners. Retry
+    # a few times with backoff rather than failing the whole deploy on a
+    # single flaky request.
+    last_err: Exception | None = None
+    for attempt in range(4):
+        try:
+            r = requests.get(URL, params=params, timeout=60)
+            r.raise_for_status()
+            out.write_bytes(r.content)
+            return
+        except (requests.exceptions.RequestException, requests.HTTPError) as e:
+            last_err = e
+            import time
+            time.sleep(2 ** attempt)
+    assert last_err is not None
+    raise last_err
 
 
 def main() -> None:

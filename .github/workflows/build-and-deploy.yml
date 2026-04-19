@@ -36,6 +36,10 @@ jobs:
         run: uv run python scripts/fetch.py
 
       - name: Fetch Environment Canada weather
+        # ECCC's server is occasionally flaky for CI runners. If the fetch
+        # fails we fall back to the committed data/raw/weather_daily.csv —
+        # slightly stale temps are better than a broken deploy.
+        continue-on-error: true
         run: uv run python scripts/fetch_weather.py
 
       - name: Build index
