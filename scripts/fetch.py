@@ -44,6 +44,15 @@ WARDS_URL = (
     "737b29e0-8329-4260-b6af-21555ab24f28/download/city-wards-data-4326.geojson"
 )
 
+# Ravine & Natural Feature Protection area (zipped shapefile, WGS84).
+# Used by ravine_analysis.py to compute per-ward ravine adjacency.
+RAVINE_URL = (
+    "https://ckan0.cf.opendata.inter.prod-toronto.ca/dataset/"
+    "204a7e54-8963-4e35-992e-5f21544ef595/resource/"
+    "bb81bb0f-f88a-4f3e-bca7-a328154ba31b/download/"
+    "ravine-natural-feature-protection-area-wgs84.zip"
+)
+
 
 def download(name: str, url: str) -> None:
     out = RAW / name
@@ -65,6 +74,7 @@ def main() -> None:
     download("sr_type_codes.xls", SR_CODES_URL)
     download("animal_services_since_2023.csv", ANIMAL_URL)
     download("city-wards-4326.geojson", WARDS_URL)
+    download("ravine-protection-area.zip", RAVINE_URL)
 
     for year, rid in SR_YEARS.items():
         url = f"{CKAN_BASE}/{rid}/download/sr{year}.zip"

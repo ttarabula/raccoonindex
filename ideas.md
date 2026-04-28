@@ -55,23 +55,27 @@ Monday/Tuesday overnight peak (garbage-night correlation).
 - New page or section with a SVG/canvas heatmap. Hottest cells + copy
   like "Raccoons call in sick Monday 3 AM" or similar.
 
-### 4. Ravine proximity per ward
-**Rationale.** Toronto's ravine system is a literal raccoon highway. Wards
-that touch ravines should have structurally higher baselines. This doesn't
-change the index itself (seasonal ratio already self-normalizes) but it's a
-great analytical finding — "ravine-adjacent wards have 2.3× the baseline
-activity of non-adjacent wards."
+### 4. Ravine proximity per ward — *explored 2026-04-28, negative result*
+**Rationale (going in).** Toronto's ravine system is a literal raccoon highway.
+Wards that touch ravines should have structurally higher baselines.
 
-**Source.**
-- open.toronto.ca: `ravine-and-natural-feature-protection` or the
-  `topographic-hill-shade` / ravine strategy dataset. Verify the current slug.
+**Source.** `ravine-natural-feature-protection-area` on open.toronto.ca
+(zipped shapefile, WGS84). Now wired through `scripts/fetch.py`.
 
-**Integration sketch.**
-- One-off analysis in a notebook or `scripts/ravine_analysis.py`.
-- GeoPandas spatial join: for each ward polygon, compute % area within N
-  metres of a ravine centreline.
-- Scatter plot: ravine-adjacency vs. mean 2019–2024 baseline.
-- Publish as a blog-post-style page, not necessarily part of the live index.
+**Result.** Hypothesis didn't hold. `scripts/ravine_analysis.py` does the
+spatial join (ward × ravine polygons + 200 m buffer) and reports correlations
+against both Index raw score and wildlife calls per km². Spearman rho is
+about +0.10 against total raw score and **−0.26** against wildlife calls per
+km² — i.e. ravine-rich Scarborough wards generate *fewer* wildlife calls per
+km² than dense, low-ravine downtown wards (Toronto-Danforth, Beaches-East
+York, Davenport, Toronto Centre top the per-km² list). The signal is
+dominated by human reporter density, not raccoon habitat. Methodology copy
+on the wards page now references this explicitly.
+
+**Possible follow-ups.** Once per-capita normalization (idea 2) lands, retest
+this against per-1000-residents activity rather than per-km² — that may
+disentangle reporter density better. Or pull a denser raccoon-specific
+signal (Toronto Wildlife Centre intake — not currently published).
 
 ### 5. Tree canopy density per ward
 **Rationale.** Canopy → raccoon habitat. The `torontotrees/` project already
