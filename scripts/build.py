@@ -34,6 +34,7 @@ RAW = ROOT / "data" / "raw"
 UNPACK = RAW / "_unpacked"
 PROC = ROOT / "data" / "processed"
 WEATHER_DAILY = RAW / "weather_daily.csv"
+WARD_PROFILES_XLSX = RAW / "ward-profiles-2021.xlsx"
 PROC.mkdir(parents=True, exist_ok=True)
 
 YEARS = sorted(int(p.stem[2:]) for p in RAW.glob("sr20*.zip"))
@@ -166,8 +167,52 @@ def ward_code_from_str(s: str | None) -> str | None:
     return m.group(1).zfill(2)
 
 
+def load_ward_populations() -> dict[str, int]:
+    """2021 census population per ward from the City Planning workbook.
+
+    Sheet '2021 One Variable' has a banner header section, then a row of
+    column headers (Toronto, Ward 1..Ward 25), then a 'Total - Age' row of
+    populations. Layout drifts between releases, so we scan the first 40 rows
+    for the 'Total - Age' label rather than hard-coding row indices.
+
+    Returns ward code ('01'..'25') → population. Empty dict if the workbook
+    isn't on disk (treated as soft-missing — per-capita output is just skipped).
+    """
+    if not WARD_PROFILES_XLSX.exists():
+        return {}
+    import openpyxl
+    wb = openpyxl.load_workbook(WARD_PROFILES_XLSX, data_only=True, read_only=True)
+    ws = wb["2021 One Variable"]
+    all_rows = list(ws.iter_rows(values_only=True, max_row=40))
+    header_row = pop_row = None
+    for i, r in enumerate(all_rows):
+        if r and r[0] == "Total - Age":
+            pop_row = r
+            header_row = all_rows[i - 1]
+            break
+    if header_row is None or pop_row is None:
+        return {}
+    pops: dict[str, int] = {}
+    for col_idx in range(2, 27):  # Ward 1..Ward 25 are columns 2..26
+        h = header_row[col_idx]
+        m = re.search(r"Ward\s*(\d+)", str(h or ""))
+        if not m:
+            continue
+        code = m.group(1).zfill(2)
+        pops[code] = int(pop_row[col_idx])
+    return pops
+
+
 def main() -> None:
     unpack_all()
+    populations = load_ward_populations()
+    if populations:
+        print(
+            f"Loaded ward populations: {len(populations)} wards, "
+            f"city total {sum(populations.values()):,}"
+        )
+    else:
+        print("No ward populations available — per-capita fields will be null.")
     con = duckdb.connect()
 
     # Union all years into a single view.
@@ -328,6 +373,12 @@ def main() -> None:
         ci_lo, ci_hi = ratio_ci(components, row[2])
         tier_lo = assign_tier(ci_lo)[0] if ci_lo is not None else tier_level
         tier_hi = assign_tier(ci_hi)[0] if ci_hi is not None else tier_level
+        pop = populations.get(row[0])
+        per_100k = (
+            float(row[1]) * 1e5 / pop
+            if pop and row[1] is not None
+            else None
+        )
         return {
             "ward": row[0],
             "raw_score": row[1],
@@ -339,6 +390,8 @@ def main() -> None:
             "tier_name": tier_name,
             "tier_level_ci_low": tier_lo,
             "tier_level_ci_high": tier_hi,
+            "population": pop,
+            "raw_score_per_100k": per_100k,
             "components": components,
         }
 

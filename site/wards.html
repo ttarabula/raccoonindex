@@ -186,6 +186,7 @@
         <th>Ward</th>
         <th>Tier</th>
         <th style="text-align:right">Score</th>
+        <th style="text-align:right">per 100k</th>
         <th style="text-align:right">vs. seasonal ↓</th>
       </tr>
     </thead>
@@ -243,21 +244,26 @@
   <p>
     Empirical check on that: we tested whether ravine adjacency (per the City's
     Ravine &amp; Natural Feature Protection polygons) predicts higher activity —
-    the ravine-system-as-raccoon-highway hypothesis. It doesn't. Ravine-rich
-    Scarborough wards (50%+ ravine area) report fewer wildlife calls per km² than
-    dense downtown wards with almost no ravine — Spearman rho = −0.26 against
-    the ravine-buffered share. Reporter density beats habitat geography in 311.
+    the ravine-system-as-raccoon-highway hypothesis. It doesn't. Per 1000
+    residents, ravine-heavy wards report essentially the same number of
+    wildlife calls as low-ravine wards (low/mid/high tertile means: 40, 44, 42
+    calls per 1000 residents over the baseline window). Toronto-Danforth, with
+    little ravine area, tops the per-resident list anyway. Ravine geography
+    does not meaningfully predict 311 wildlife reporting.
   </p>
   <p>
     The ward leaderboard is ranked by <em>seasonal ratio</em>, not raw score, so
-    dense downtown wards don't automatically dominate. The raw <em>Score</em> column
-    is <strong>not</strong> per-capita or per-area — bigger, denser, more-wired-in
-    wards naturally generate more 311 calls. Seasonal ratio self-normalizes because
-    each ward is being compared to its own historical baseline.
+    dense downtown wards don't automatically dominate. The <em>Score</em> column
+    is the raw weighted Index value; <em>per 100k</em> divides it by the ward's
+    2021 census population so wards of different sizes are directly comparable.
+    Seasonal ratio self-normalizes too, since each ward is compared to its own
+    historical baseline.
   </p>
   <p>
     Source: <a href="https://open.toronto.ca/dataset/311-service-requests-customer-initiated/">311 Service Requests — Customer Initiated</a>, open.toronto.ca.
     Ward boundaries: <a href="https://open.toronto.ca/dataset/city-wards/">City Wards</a>.
+    Ward populations: <a href="https://open.toronto.ca/dataset/ward-profiles-25-ward-model/">Ward Profiles (25-Ward Model)</a>, 2021 census.
+    Ravine adjacency: <a href="https://open.toronto.ca/dataset/ravine-natural-feature-protection-area/">Ravine &amp; Natural Feature Protection Area</a>.
     Weather: Environment and Climate Change Canada, Toronto City station.
     Inspired by the retired <a href="https://open.toronto.ca/dataset/toronto-raccoon-activity-index/">Toronto Raccoon Activity Index</a> (April 1 joke).
   </p>
@@ -401,11 +407,15 @@
     const tierPill = w.tier_name
       ? `<span class="tier-pill" style="background:${tierColor}">${w.tier_name}</span>`
       : "—";
+    const per100k = w.raw_score_per_100k != null
+      ? Number(w.raw_score_per_100k).toFixed(1)
+      : "—";
     tr.innerHTML = `
       <td class="rank">${i + 1}</td>
       <td>${wardName} <span style="color:var(--dim)">(${w.ward})</span></td>
       <td>${tierPill}</td>
       <td class="score">${Number(w.raw_score).toFixed(1)}</td>
+      <td class="score">${per100k}</td>
       <td class="ratio" style="color:${tierColor}">${ratioCell}</td>
     `;
     tr.addEventListener("click", () => showWard(w.ward));
@@ -456,6 +466,9 @@
         <div>
           <div class="k">Index</div>
           <div class="n">${Number(rec.raw_score).toFixed(1)}</div>
+          ${rec.raw_score_per_100k != null
+            ? `<div style="color:var(--dim);font-size:0.75rem;margin-top:0.2rem">${Number(rec.raw_score_per_100k).toFixed(1)} per 100k residents</div>`
+            : ""}
         </div>
         <div>
           <div class="k">vs. seasonal</div>

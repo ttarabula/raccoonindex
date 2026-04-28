@@ -26,21 +26,19 @@ projection would make it a real forecast instead of a 4-week trailing mean.
 - Start by just adding weather as an analytical layer (correlation chart on a
   new page) before folding into the index.
 
-### 2. Ward populations (2021 Census via ward-profiles-25-ward-model)
-**Rationale.** Solves the per-capita bias we acknowledged in the leaderboard
-methodology. Currently the ward raw score rewards big/dense wards.
+### 2. Ward populations (2021 Census via ward-profiles-25-ward-model) — *shipped 2026-04-28*
+**Rationale.** Solved the per-capita bias acknowledged in earlier methodology
+copy. Raw weighted Index score still rewards big/dense wards, but the
+leaderboard now also shows per-100k residents alongside it.
 
-**Source.**
-- open.toronto.ca dataset: `ward-profiles-25-ward-model`
-- 2021 Census population per ward (25-ward model).
-- Updates every 5 years; next Census 2026 results probably ~2027.
+**Source.** `ward-profiles-25-ward-model` on open.toronto.ca, sheet
+"2021 One Variable", "Total - Age" row. Wired through `scripts/fetch.py`
+and `build.load_ward_populations()`.
 
-**Integration sketch.**
-- `scripts/fetch.py` gains an ECCC-style lookup for ward populations.
-- `build.py` divides raw scores by `population / 100_000` to get
-  "calls per 100k residents."
-- Leaderboard keeps seasonal ratio as primary; adds per-capita column.
-- Front page "wards elevated" count stays as-is (it's a yes/no).
+**What landed.** `raw_score_per_100k` and `population` fields on every ward
+in `index_latest.json`; new "per 100k" column in the leaderboard; per-100k
+sub-line in the ward detail panel; methodology paragraph updated. Ravine
+analysis (idea 4) now also uses per-1000-residents normalization.
 
 ### 3. Day-of-week / time-of-day drill-down
 **Rationale.** No new data source — the 311 `Creation Date` field has full
@@ -72,10 +70,15 @@ York, Davenport, Toronto Centre top the per-km² list). The signal is
 dominated by human reporter density, not raccoon habitat. Methodology copy
 on the wards page now references this explicitly.
 
-**Possible follow-ups.** Once per-capita normalization (idea 2) lands, retest
-this against per-1000-residents activity rather than per-km² — that may
-disentangle reporter density better. Or pull a denser raccoon-specific
-signal (Toronto Wildlife Centre intake — not currently published).
+**Update (2026-04-28, after per-capita normalization landed).** Re-ran with
+per-1000-residents instead of per-km². The negative correlation was an
+artifact of ravine wards being large and low-density; on a per-resident
+basis the correlation is weakly positive (rho = +0.20) but tertile means
+are essentially flat (40 / 44 / 42 calls per 1000 residents). Refined
+finding: ravine geography does not meaningfully predict 311 wildlife
+reporting either way. Methodology copy updated to reflect the per-resident
+result. The only path forward would be a denser raccoon-specific signal
+(Toronto Wildlife Centre intake — not currently published).
 
 ### 5. Tree canopy density per ward
 **Rationale.** Canopy → raccoon habitat. The `torontotrees/` project already

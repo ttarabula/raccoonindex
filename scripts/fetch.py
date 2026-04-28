@@ -53,6 +53,15 @@ RAVINE_URL = (
     "ravine-natural-feature-protection-area-wgs84.zip"
 )
 
+# Ward Profiles (25-ward model) — XLSX of 2011/2016/2021 census data per ward.
+# Used by build.py for per-capita normalization.
+WARD_PROFILES_URL = (
+    "https://ckan0.cf.opendata.inter.prod-toronto.ca/dataset/"
+    "6678e1a6-d25f-4dff-b2b7-aa8f042bc2eb/resource/"
+    "16a31e1d-b4d9-4cf0-b5b3-2e3937cb4121/download/"
+    "2023-wardprofiles-2011-2021-censusdata_rev0719.xlsx"
+)
+
 
 def download(name: str, url: str) -> None:
     out = RAW / name
@@ -75,6 +84,7 @@ def main() -> None:
     download("animal_services_since_2023.csv", ANIMAL_URL)
     download("city-wards-4326.geojson", WARDS_URL)
     download("ravine-protection-area.zip", RAVINE_URL)
+    download("ward-profiles-2021.xlsx", WARD_PROFILES_URL)
 
     for year, rid in SR_YEARS.items():
         url = f"{CKAN_BASE}/{rid}/download/sr{year}.zip"
