@@ -123,6 +123,21 @@
   #seasonal-chart { width: 100%; max-width: 900px; height: 300px; display: block;
     background: var(--bg-2); border: 1px solid var(--rule); border-radius: 6px; }
 
+  .dayofweek { padding: 0 1.5rem 2rem; }
+  .dayofweek h2 { margin-bottom: 0.3rem; }
+  .dayofweek .sub { color: var(--dim); font-size: 0.85rem; margin: 0 0 1rem; }
+  .dayofweek .peak-line { color: var(--fg); font-size: 0.95rem; margin: 0 0 0.8rem;
+    font-family: "ui-sans-serif", system-ui, sans-serif; }
+  .dayofweek .peak-line strong { color: var(--t5); font-weight: 600; }
+  #dayofweek-chart { width: 100%; max-width: 900px; height: 230px; display: block;
+    background: var(--bg-2); border: 1px solid var(--rule); border-radius: 6px; }
+  .dayofweek .scale { display: flex; align-items: center; gap: 0.5rem;
+    color: var(--dim); font-size: 0.75rem; margin-top: 0.6rem; }
+  .dayofweek .scale .ramp { display: inline-block; height: 8px; width: 160px;
+    background: linear-gradient(to right,
+      rgba(216,92,63,0.05), rgba(216,92,63,0.95));
+    border-radius: 2px; }
+
   .leaderboard { padding: 0 1.5rem 2rem; }
   .leaderboard h2 { margin-bottom: 0.6rem; }
   .leaderboard table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
@@ -183,6 +198,14 @@
   <p class="sub">Weekly city-wide activity, normalized to each year's mean. Baseline mean shows the typical shape; the current year is overlaid so you can see where 2026 is tracking.</p>
   <svg id="seasonal-chart" viewBox="0 0 900 300" preserveAspectRatio="none"></svg>
   <div class="legend" id="seasonal-legend"></div>
+</section>
+
+<section class="dayofweek">
+  <h2>Raccoon o'clock</h2>
+  <p class="sub">Wildlife and bin-damage 311 calls by hour of day and day of week. Raccoons strike at night; Toronto reports them in the morning.</p>
+  <p class="peak-line" id="dayofweek-peak">loading…</p>
+  <svg id="dayofweek-chart" viewBox="0 0 900 230" preserveAspectRatio="none"></svg>
+  <div class="scale"><span>fewer calls</span><span class="ramp"></span><span>more calls</span></div>
 </section>
 
 <section class="methodology">
@@ -262,11 +285,12 @@
     1: "#5b8fa8", 2: "#6fa0b0", 3: "#c8d18a", 4: "#d89b5f", 5: "#d85c3f",
   };
 
-  const [indexData, trendData, wardsGeo, seasonalData] = await Promise.all([
+  const [indexData, trendData, wardsGeo, seasonalData, dayofweekData] = await Promise.all([
     fetch("data/index_latest.json").then(r => r.json()),
     fetch("data/ward_trend.json").then(r => r.json()),
     fetch("data/wards.geojson").then(r => r.json()),
     fetch("data/city_seasonal.json").then(r => r.json()),
+    fetch("data/dayofweek.json").then(r => r.json()),
   ]);
 
   // Period label
@@ -465,6 +489,94 @@
 
   // Seasonal pattern chart.
   drawSeasonalChart(seasonalData);
+
+  // Day-of-week × hour heatmap.
+  drawDayofweekHeatmap(dayofweekData);
+
+  function drawDayofweekHeatmap(data) {
+    const svg = document.getElementById("dayofweek-chart");
+    const peakEl = document.getElementById("dayofweek-peak");
+    if (!svg || !data) return;
+    const W = 900, H = 230;
+    const padL = 44, padR = 14, padT = 22, padB = 22;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+    const cellW = plotW / 24;
+    const cellH = plotH / 7;
+    const ns = "http://www.w3.org/2000/svg";
+    svg.innerHTML = "";
+
+    const matrix = data.matrix;
+    const max = data.max_cell || 1;
+    const dowLabels = data.dow_labels || ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+    // Cells
+    for (let d = 0; d < 7; d++) {
+      for (let h = 0; h < 24; h++) {
+        const v = matrix[d][h];
+        // Gamma-corrected so the eye sees the gradient evenly across the range.
+        const t = max > 0 ? Math.pow(v / max, 0.6) : 0;
+        const opacity = 0.05 + t * 0.9;
+        const rect = document.createElementNS(ns, "rect");
+        rect.setAttribute("x", (padL + h * cellW + 0.5).toFixed(2));
+        rect.setAttribute("y", (padT + d * cellH + 0.5).toFixed(2));
+        rect.setAttribute("width", (cellW - 1).toFixed(2));
+        rect.setAttribute("height", (cellH - 1).toFixed(2));
+        rect.setAttribute("fill", "#d85c3f");
+        rect.setAttribute("fill-opacity", opacity.toFixed(3));
+        rect.setAttribute("rx", "1");
+        const title = document.createElementNS(ns, "title");
+        title.textContent = `${dowLabels[d]} ${String(h).padStart(2,"0")}:00 — ${v.toLocaleString()} calls (baseline years)`;
+        rect.appendChild(title);
+        svg.appendChild(rect);
+      }
+    }
+
+    // Day-of-week labels (left)
+    for (let d = 0; d < 7; d++) {
+      const t = document.createElementNS(ns, "text");
+      t.setAttribute("x", padL - 8);
+      t.setAttribute("y", padT + d * cellH + cellH / 2 + 3.5);
+      t.setAttribute("text-anchor", "end");
+      t.setAttribute("fill", "var(--dim)");
+      t.setAttribute("font-size", "10");
+      t.setAttribute("font-family", "ui-monospace, Menlo, monospace");
+      t.textContent = dowLabels[d];
+      svg.appendChild(t);
+    }
+
+    // Hour labels (bottom): every 3 hours.
+    for (let h = 0; h <= 24; h += 3) {
+      const x = padL + h * cellW;
+      const t = document.createElementNS(ns, "text");
+      t.setAttribute("x", x);
+      t.setAttribute("y", H - padB + 14);
+      t.setAttribute("text-anchor", "middle");
+      t.setAttribute("fill", "var(--dim)");
+      t.setAttribute("font-size", "10");
+      t.setAttribute("font-family", "ui-monospace, Menlo, monospace");
+      t.textContent = String(h).padStart(2, "0");
+      svg.appendChild(t);
+    }
+
+    // "Hour of day" axis title under the hour labels would be nice but we're
+    // tight on vertical space; the dow column on the left is self-evident.
+
+    // Peak callout
+    if (data.peak) {
+      const { dow, hour, count } = data.peak;
+      const dayName = dowLabels[dow];
+      const hr12 = hour % 12 === 0 ? 12 : hour % 12;
+      const ampm = hour < 12 ? "AM" : "PM";
+      const baselineYears = data.baseline_years || [];
+      const yearSpan = baselineYears.length
+        ? `${Math.min(...baselineYears)}–${Math.max(...baselineYears)}`
+        : "baseline";
+      peakEl.innerHTML =
+        `Peak hour: <strong>${dayName} ${hr12} ${ampm}</strong> ` +
+        `— ${count.toLocaleString()} wildlife and bin-damage calls across the baseline window (${yearSpan}).`;
+    }
+  }
 
   function drawSeasonalChart(data) {
     const svg = document.getElementById("seasonal-chart");

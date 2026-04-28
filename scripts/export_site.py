@@ -57,12 +57,20 @@ def copy_seasonal() -> None:
     print(f"wrote city_seasonal.json ({dst.stat().st_size / 1024:.0f} KB)")
 
 
+def copy_dayofweek() -> None:
+    src = PROC / "dayofweek.json"
+    dst = SITE / "dayofweek.json"
+    dst.write_text(src.read_text())
+    print(f"wrote dayofweek.json ({dst.stat().st_size / 1024:.0f} KB)")
+
+
 def main() -> None:
     trim_wards_geojson()
     copy_index()
     copy_trend()
     copy_summary()
     copy_seasonal()
+    copy_dayofweek()
 
 
 if __name__ == "__main__":

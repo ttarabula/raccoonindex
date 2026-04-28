@@ -459,6 +459,60 @@ def main() -> None:
     )
     print(f"Wrote {PROC / 'city_seasonal.json'} — {len(series_by_year)} years")
 
+    # Day-of-week × hour-of-day matrix for the most raccoon-driven signals.
+    # Restricted to baseline years (skip 2020–2021) so the pattern reflects
+    # normal life, not lockdown anomalies. Counts are absolute totals across
+    # the baseline window; the frontend re-scales for display.
+    DOW_HOUR_CATEGORIES = (
+        "wildlife_cadaver",
+        "wildlife_injured",
+        "wildlife_nuisance",
+        "bin_damage",
+    )
+    dow_cat_sql = "(" + ",".join(f"'{c}'" for c in DOW_HOUR_CATEGORIES) + ")"
+    dow_rows = con.execute(
+        f"""
+        SELECT
+            CAST(ISODOW(created_at) - 1 AS INT) AS dow,  -- 0=Mon..6=Sun
+            CAST(HOUR(created_at) AS INT) AS hour,
+            COUNT(*) AS n
+        FROM sr_normalized
+        WHERE category IN {dow_cat_sql}
+          AND CAST(ISOYEAR(created_at) AS INT) IN {BASELINE_YEARS_SQL}
+        GROUP BY dow, hour
+        """
+    ).fetchall()
+    matrix = [[0] * 24 for _ in range(7)]
+    for dow, hour, n in dow_rows:
+        matrix[int(dow)][int(hour)] = int(n)
+    peak_dow, peak_hour, peak_n = 0, 0, 0
+    for d in range(7):
+        for h in range(24):
+            if matrix[d][h] > peak_n:
+                peak_n, peak_dow, peak_hour = matrix[d][h], d, h
+    row_totals = [sum(r) for r in matrix]
+    col_totals = [sum(matrix[d][h] for d in range(7)) for h in range(24)]
+    grand_total = sum(row_totals)
+    dayofweek_payload = {
+        "baseline_years": list(BASELINE_YEARS),
+        "categories": list(DOW_HOUR_CATEGORIES),
+        "dow_labels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        "matrix": matrix,
+        "row_totals": row_totals,
+        "col_totals": col_totals,
+        "grand_total": grand_total,
+        "peak": {"dow": peak_dow, "hour": peak_hour, "count": peak_n},
+        "max_cell": peak_n,
+    }
+    (PROC / "dayofweek.json").write_text(
+        json.dumps(dayofweek_payload, indent=2, default=_json_default)
+    )
+    print(
+        f"Wrote {PROC / 'dayofweek.json'} — peak "
+        f"{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][peak_dow]} "
+        f"{peak_hour:02d}:00 ({peak_n:,} calls)"
+    )
+
     city_now = con.execute(
         "SELECT city_raw, city_ratio FROM weekly_city WHERE iso_year = ? AND iso_week = ?",
         [latest_y, latest_w],
